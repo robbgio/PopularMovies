@@ -128,7 +128,7 @@ public class MainActivityFragment extends Fragment {
     }
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.moviefragment, menu);
+        inflater.inflate(R.menu.movie_fragment, menu);
     }
 
     public class FetchMoviesTask extends AsyncTask<String, Void, ArrayList<MovieItem>> {
