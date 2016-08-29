@@ -3,10 +3,11 @@
     <string-array name="pref_sort_types">
         <item>Popular</item>
         <item>Top Rated</item>
+        <item>Favorites</item>
     </string-array>
     <string-array name="pref_sort_type_values">
         <item>popular</item>
         <item>top_rated</item>
+        <item>favorites</item>
     </string-array>
-
 </resources>

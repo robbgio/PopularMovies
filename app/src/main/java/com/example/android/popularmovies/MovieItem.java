@@ -17,7 +17,9 @@ public class MovieItem implements Parcelable {
     private String releaseDate;
     private String overview;
     private Double voteAverage;
+    private Boolean favorite=false;
     ImageView posterImageView;
+    private int movieID;
 
 
     public MovieItem(String path, String t){
@@ -31,6 +33,7 @@ public class MovieItem implements Parcelable {
         releaseDate = in.readString();
         voteAverage = in.readDouble();
         overview = in.readString();
+        movieID = in.readInt();
     }
 
     public void setPosterPath(String pp){
@@ -55,6 +58,15 @@ public class MovieItem implements Parcelable {
     public void setReleaseDate (String date) {releaseDate = date;}
     public void setOverview (String overview) {this.overview = overview;}
     public void setVoteAverage (Double average) {this.voteAverage= average;}
+    public void setFavorite(Boolean fav){
+        favorite = fav;
+    }
+    public void setMovieID(int movieID) {
+        this.movieID = movieID;
+    }
+    public int getMovieID() {return movieID;}
+
+    public Boolean getFavorite(){ return favorite;}
     public String getPosterPath (){
         return posterPath;
     }
@@ -93,6 +105,7 @@ public class MovieItem implements Parcelable {
         dest.writeString(releaseDate);
         dest.writeDouble(voteAverage);
         dest.writeString(overview);
+        dest.writeInt(movieID);
     }
 
     public static final Parcelable.Creator<MovieItem> CREATOR = new Parcelable.Creator<MovieItem>(){

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 public class MainActivityFragment extends Fragment {
     public final String POPULAR = "popular";
     public final String TOP_RATED = "top_rated";
+    public final String FAVORITES ="favorites";
     private MovieAdapter movieAdapter;
     public String currentSortType = POPULAR;
 
@@ -50,7 +51,16 @@ public class MainActivityFragment extends Fragment {
     private void updateMovieItems() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         currentSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
-        new FetchMoviesTask().execute(currentSortType);
+        if (currentSortType.equals(FAVORITES)){
+            showFavorites();
+        }
+        else {
+            new FetchMoviesTask().execute(currentSortType);
+        }
+    }
+
+    private void showFavorites() {
+
     }
 
     @Override
@@ -144,7 +154,7 @@ public class MainActivityFragment extends Fragment {
             String moviesJsonStr;
             String type = params[0]; // popular or top_rated
             //replace with your API key here:
-            final String myKey = "replacewithyourAPIkeyhere";
+            final String myKey = "Enter API Key Here";
 
             try {
                 final String MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/";
@@ -211,6 +221,7 @@ public class MainActivityFragment extends Fragment {
             final String RELEASE_DATE = "release_date";
             final String VOTE_AVERAGE = "vote_average";
             final String OVERVIEW = "overview";
+            final String MOVIE_ID = "id";
 
             JSONObject movieJson = new JSONObject(jsonMovies);
             JSONArray movieArray = movieJson.getJSONArray(TMDB_RESULTS);
@@ -224,6 +235,7 @@ public class MainActivityFragment extends Fragment {
                 String overview;
                 double voteAverage;
                 String releaseDate;
+                int movieID;
 
                 // load fields from JSON string for each movie
                 JSONObject movie = movieArray.getJSONObject(i);
@@ -233,6 +245,7 @@ public class MainActivityFragment extends Fragment {
                 overview = movie.getString(OVERVIEW);
                 voteAverage = movie.getDouble(VOTE_AVERAGE);
                 releaseDate = movie.getString(RELEASE_DATE);
+                movieID = movie.getInt(MOVIE_ID);
 
                 // load fields into each movie item
                 movieList.add(new MovieItem(posterPath, title));
@@ -240,6 +253,7 @@ public class MainActivityFragment extends Fragment {
                 movieList.get(i).setReleaseDate(releaseDate);
                 movieList.get(i).setVoteAverage(voteAverage);
                 movieList.get(i).setOverview(overview);
+                movieList.get(i).setMovieID(movieID);
 
             }
             return movieList; // return Arraylist of MovieItems with all fields loaded

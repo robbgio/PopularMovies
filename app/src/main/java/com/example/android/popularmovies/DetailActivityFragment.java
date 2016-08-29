@@ -10,20 +10,26 @@ import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.example.android.popularmovies.Data.MovieDBHelper;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
-public class DetailActivityFragment extends Fragment {
+public class DetailActivityFragment extends Fragment implements View.OnClickListener {
     private String movieTitle;
     private String releaseDate;
+    private String releaseDateFormatted;
     private Double voteAverage;
     private String overview;
-
+    MovieItem detailMovie;
+    Button toggleButton;
+    private MovieDBHelper mOpenHelper;
+    private int movieID;
 
     public DetailActivityFragment() {
     }
@@ -42,6 +48,8 @@ public class DetailActivityFragment extends Fragment {
             landscape = false;
             rootView = inflater.inflate(R.layout.fragment_detail, container, false);
         }
+        toggleButton = (Button) rootView.findViewById(R.id.toggleButton);
+        toggleButton.setOnClickListener(this);
         // get actual display dimensions in pixels and set backdrop width based on that
         Display display = this.getActivity().getWindowManager().getDefaultDisplay();
         Point size = new Point();
@@ -60,7 +68,8 @@ public class DetailActivityFragment extends Fragment {
         if (intent !=null && intent.hasExtra("Movie Items") && intent.hasExtra("Position")){
             int position = intent.getExtras().getInt("Position");
             ArrayList<MovieItem> movieItems = intent.getExtras().getParcelableArrayList("Movie Items");
-            MovieItem detailMovie = null;
+
+            detailMovie = null;
             // get selected movie
             if (movieItems != null) {
                 detailMovie = movieItems.get(position);
@@ -70,9 +79,20 @@ public class DetailActivityFragment extends Fragment {
                 movieTitle = detailMovie.getTitle();
 
                 releaseDate = detailMovie.getReleaseDate();
-                releaseDate = formatDate(releaseDate);
+                releaseDateFormatted = formatDate(releaseDate);
                 voteAverage = detailMovie.getVoteAverage();
                 overview = detailMovie.getOverview();
+                movieID = detailMovie.getMovieID();
+            }
+
+            mOpenHelper = new MovieDBHelper(getContext());
+            if (mOpenHelper.moviePresent(detailMovie.getMovieID())) {
+                detailMovie.setFavorite(true);
+                ((Button) rootView.findViewById(R.id.toggleButton)).setText("Favorite");
+            }
+            else {
+                detailMovie.setFavorite(false);
+                ((Button) rootView.findViewById(R.id.toggleButton)).setText("Set as Favorite");
             }
             // set backdrop size which is partly determined by orientation
             ImageView detailBackdrop = (ImageView) rootView.findViewById(R.id.backdrop_view);
@@ -93,7 +113,7 @@ public class DetailActivityFragment extends Fragment {
             }
             // set title and release date
             ((TextView) rootView.findViewById(R.id.title_text_view)).setText(movieTitle);
-            ((TextView) rootView.findViewById(R.id.release_date_text_view)).setText(releaseDate);
+            ((TextView) rootView.findViewById(R.id.release_date_text_view)).setText(releaseDateFormatted);
 
             // load stars base on vote average
             LinearLayout starLayout = (LinearLayout) rootView.findViewById(R.id.star_layout);
@@ -170,5 +190,26 @@ public class DetailActivityFragment extends Fragment {
         // convert from yyyy-mm-dd to Month day, year
         releaseDate = monthName + " " + day + ", " + year;
         return releaseDate;
+    }
+    @Override
+    public void onClick(View v) {
+        toggleFavorite(v);
+    }
+
+    public void toggleFavorite (View view){
+        mOpenHelper = new MovieDBHelper(getContext());
+        Button b = (Button) view;
+        if (!detailMovie.getFavorite()){
+            detailMovie.setFavorite(true);
+            b.setText("Favorite");
+            mOpenHelper.insertMovies(detailMovie.getMovieID(), detailMovie.getTitle(), detailMovie.getPosterPath(),
+                    detailMovie.getBackdropPath(), detailMovie.getReleaseDate(),
+                    detailMovie.getOverview(), detailMovie.getVoteAverage());
+        }
+        else {
+            detailMovie.setFavorite(false);
+            b.setText("Save as Favorite");
+            mOpenHelper.deleteMovies(detailMovie.getMovieID());
+        }
     }
 }
