@@ -20,13 +20,14 @@ public class MovieDBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        final String SQL_CREATE_FAVORITES_TABLE = "CREATE TABLE Favorites (MOVIEID INTEGER PRIMARY KEY, " +
-                "MOVIETITLE TEXT NOT NULL, " +
-                "MOVIEPOSTERPATH TEXT NOT NULL, " +
-                "MOVIEBACKDROPPATH TEXT NOT NULL, " +
-                "MOVIEDATE TEXT NOT NULL, " +
-                "MOVIEOVERVIEW TEXT NOT NULL, " +
-                "MOVIEVOTEAVE REAL NOT NULL);";
+        final String SQL_CREATE_FAVORITES_TABLE = "CREATE TABLE " + MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE +
+                "(" + MovieContract.MovieFavoritesTable._ID + " INTEGER PRIMARY KEY, " +
+                MovieContract.MovieFavoritesTable.MOVIE_TITLE + " TEXT NOT NULL, " +
+                MovieContract.MovieFavoritesTable.MOVIE_POSTER_PATH + " TEXT NOT NULL, " +
+                MovieContract.MovieFavoritesTable.MOVIE_BACKDROP_PATH + " TEXT NOT NULL, " +
+                MovieContract.MovieFavoritesTable.MOVIE_DATE + " TEXT NOT NULL, " +
+                MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW + " TEXT NOT NULL, " +
+                MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE + " REAL NOT NULL);";
 
         db.execSQL(SQL_CREATE_FAVORITES_TABLE);
     }
@@ -43,33 +44,42 @@ public class MovieDBHelper extends SQLiteOpenHelper {
                                  String movieOverview, Double movieVote){
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
-        contentValues.put("MOVIEID",movieID);
-        contentValues.put("MOVIETITLE",movieTitle);
-        contentValues.put("MOVIEPOSTERPATH",moviePoster);
-        contentValues.put("MOVIEBACKDROPPATH",movieBackdrop);
-        contentValues.put("MOVIEDATE",movieDate);
-        contentValues.put("MOVIEOVERVIEW",movieOverview);
-        contentValues.put("MOVIEVOTEAVE",movieVote);
+        contentValues.put(MovieContract.MovieFavoritesTable._ID,movieID);
+        contentValues.put(MovieContract.MovieFavoritesTable.MOVIE_TITLE,movieTitle);
+        contentValues.put(MovieContract.MovieFavoritesTable.MOVIE_POSTER_PATH,moviePoster);
+        contentValues.put(MovieContract.MovieFavoritesTable.MOVIE_BACKDROP_PATH,movieBackdrop);
+        contentValues.put(MovieContract.MovieFavoritesTable.MOVIE_DATE,movieDate);
+        contentValues.put(MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW,movieOverview);
+        contentValues.put(MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE,movieVote);
 
-        long result = db.replace("FAVORITES",null,contentValues);
+        long result = db.replace(MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,null,contentValues);
         return result != -1;
     }
     public boolean deleteMovies (int movieID){
         SQLiteDatabase db = this.getWritableDatabase();
-        int result = db.delete("FAVORITES","MOVIEID=?", new String[] {Integer.toString(movieID)});
+        int result = db.delete(MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,
+                MovieContract.MovieFavoritesTable._ID + "=?", new String[] {Integer.toString(movieID)});
         return result > 0;
     }
     public boolean moviePresent (int movieID){
         String sMovieID = Integer.toString(movieID);
         SQLiteDatabase db = this.getReadableDatabase();
-        String[] columns = { "MOVIEID" };
-        String selection = "MOVIEID=?";
+        String[] columns = { MovieContract.MovieFavoritesTable._ID };
+        String selection = MovieContract.MovieFavoritesTable._ID + "=?";
         String[] selectionArgs = {sMovieID};
         String limit = "1";
 
-        Cursor cursor = db.query("FAVORITES", columns, selection, selectionArgs, null, null, null, limit);
+        Cursor cursor = db.query(MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,
+                columns, selection, selectionArgs, null, null, null, limit);
         boolean present = (cursor.getCount() > 0);
         cursor.close();
         return present;
+    }
+
+    public Cursor getAllFavorites (){
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery("select * from " + MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,null);
+        return cursor;
     }
 }

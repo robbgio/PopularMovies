@@ -77,7 +77,6 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
             // get info from move item fields
             if (detailMovie != null) {
                 movieTitle = detailMovie.getTitle();
-
                 releaseDate = detailMovie.getReleaseDate();
                 releaseDateFormatted = formatDate(releaseDate);
                 voteAverage = detailMovie.getVoteAverage();

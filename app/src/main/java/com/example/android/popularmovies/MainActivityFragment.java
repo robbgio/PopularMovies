@@ -3,11 +3,16 @@ package com.example.android.popularmovies;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -17,6 +22,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+
+import com.example.android.popularmovies.Data.MovieContract;
+import com.example.android.popularmovies.Data.MovieDBHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,14 +38,19 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public final String POPULAR = "popular";
     public final String TOP_RATED = "top_rated";
     public final String FAVORITES ="favorites";
     private MovieAdapter movieAdapter;
+    private FavoritesAdapter mFavoritesAdapter;
     public String currentSortType = POPULAR;
-
+    private GridView mGridView;
     private ArrayList<MovieItem> movieItems = new ArrayList<>();
+    private static final int FAVORITES_LOADER_ID = 0;
+    private boolean onCreateViewCompleted = false;
+    private Cursor currentFavoritesCursor=null;
+    private Boolean prefChanged = false;
 
     public MainActivityFragment(){
     }
@@ -48,6 +61,13 @@ public class MainActivityFragment extends Fragment {
         super.onSaveInstanceState(outState);
     }
 
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+
+        getLoaderManager().initLoader(FAVORITES_LOADER_ID, null, this);
+        super.onActivityCreated(savedInstanceState);
+    }
+
     private void updateMovieItems() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         currentSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
@@ -56,15 +76,73 @@ public class MainActivityFragment extends Fragment {
         }
         else {
             new FetchMoviesTask().execute(currentSortType);
+            prefChanged=false;
         }
     }
 
-    private void showFavorites() {
+    private boolean showFavorites() {
 
+
+        if (!onCreateViewCompleted) return false;
+        MovieDBHelper mdbHelper = new MovieDBHelper(getContext());
+        Cursor cursorFavorites = mdbHelper.getAllFavorites();
+
+        int movieCount = cursorFavorites.getCount();
+        if (movieCount==0) return false; //nothing to show
+
+        // if cursor hasn't changed don't update view
+        Boolean changed = false;
+        if (currentFavoritesCursor!=null){
+            if (currentFavoritesCursor.getCount()==movieCount){
+                for (int i = 0; i < movieCount; i++) {
+                    currentFavoritesCursor.moveToPosition(i);
+                    cursorFavorites.moveToPosition(i);
+                    if (currentFavoritesCursor.getInt(currentFavoritesCursor.getColumnIndex(MovieContract.MovieFavoritesTable._ID)) !=
+                            cursorFavorites.getInt(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable._ID))) {
+                        changed = true;
+                    }
+                }
+                if (!changed & !prefChanged) return false;
+            }
+        }
+
+        if (movieItems!=null) movieItems.clear();
+        if (cursorFavorites.moveToFirst()) {
+            for (int i = 0; i < movieCount; i++) {
+                cursorFavorites.moveToPosition(i);
+                int id = cursorFavorites.getInt(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable._ID));
+                String title = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_TITLE));
+                String poster = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_POSTER_PATH));
+                String backdrop = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_BACKDROP_PATH));
+                String date = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_DATE));
+                String overview = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW));
+                Double vote = cursorFavorites.getDouble(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE));
+
+                MovieItem movie = new MovieItem(poster, title);
+                movie.setMovieID(id);
+                movie.setBackdropPath(backdrop);
+                movie.setReleaseDate(date);
+                movie.setOverview(overview);
+                movie.setVoteAverage(vote);
+                movie.setFavorite(true);
+
+                movieItems.add(movie);
+            }
+
+            mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
+
+            mFavoritesAdapter.swapCursor(cursorFavorites);
+            mGridView.setAdapter(mFavoritesAdapter);
+            currentFavoritesCursor = cursorFavorites;
+            prefChanged=false;
+            return true;
+        }
+        return false;
     }
 
     @Override
     public void onStart() {
+        Log.d("on start", "on start");
         // only update movie items if not already loaded
         if (movieItems.isEmpty()){
             updateMovieItems();
@@ -74,12 +152,20 @@ public class MainActivityFragment extends Fragment {
 
     @Override
     public void onResume() {  // called after coming back from settings activity
+        Log.d("On resume","on resume");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         // detect whether sort type was changed, then update movies if true
         String prefSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
-        if (!currentSortType.equals(prefSortType)){
-            if (movieAdapter!=null) movieAdapter.clear();
-            updateMovieItems();
+        if (!currentSortType.equals(prefSortType) & (currentSortType!="favorites")){
+                prefChanged=true;
+                mGridView.setAdapter(movieAdapter);
+                updateMovieItems();
+        }
+        else {
+            if (prefSortType.equals("favorites")) {
+                if (!currentSortType.equals(prefSortType)) prefChanged=true;
+                updateMovieItems();
+            }
         }
         super.onResume();
     }
@@ -116,13 +202,13 @@ public class MainActivityFragment extends Fragment {
 
         movieAdapter = new MovieAdapter(getActivity(), movieItems);
 
-        GridView gridView = (GridView) rootView.findViewById(R.id.gridview_pics);
+        mGridView = (GridView) rootView.findViewById(R.id.gridview_pics);
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
-            gridView.setNumColumns(4);  // four columns if landscape
+            mGridView.setNumColumns(4);  // four columns if landscape
         }
-        gridView.setAdapter(movieAdapter);
+        mGridView.setAdapter(movieAdapter);
 
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Open detail screen if poster is selected
@@ -133,9 +219,36 @@ public class MainActivityFragment extends Fragment {
 
             }
         });
+        onCreateViewCompleted = true;
 
         return rootView;
     }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return new CursorLoader(getActivity(),
+                MovieContract.MovieFavoritesTable.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (data!=null) mFavoritesAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mFavoritesAdapter.swapCursor(null);
+    }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.movie_fragment, menu);
@@ -154,7 +267,7 @@ public class MainActivityFragment extends Fragment {
             String moviesJsonStr;
             String type = params[0]; // popular or top_rated
             //replace with your API key here:
-            final String myKey = "Enter API Key Here";
+            final String myKey = "replaceAPIKeyHere";
 
             try {
                 final String MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/";
@@ -271,6 +384,7 @@ public class MainActivityFragment extends Fragment {
                     // this is only reasonable because only 20 movies, if it was more than that, prob use recyclerview
                     movieAdapter.add(movie);
                 }
+                mGridView.setAdapter(movieAdapter);
             }
         }
     }
