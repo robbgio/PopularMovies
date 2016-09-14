@@ -84,6 +84,13 @@
             android:textColor="@color/textColor"
             android:layout_marginLeft="3dp"
             android:layout_marginRight="3dp"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save as Favorite"
+            android:id="@+id/toggleButton"
+            android:layout_gravity="center_horizontal"
+            />
         </LinearLayout>
 
     </LinearLayout>

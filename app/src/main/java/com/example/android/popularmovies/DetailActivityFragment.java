@@ -30,6 +30,9 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
     Button toggleButton;
     private MovieDBHelper mOpenHelper;
     private int movieID;
+    int mPosition;
+    ArrayList<MovieItem> movieItems;
+    private boolean mTab=false;
 
     public DetailActivityFragment() {
     }
@@ -38,6 +41,16 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView;
+        Intent intent = getActivity().getIntent();
+        Bundle arguments = getArguments();
+        if (arguments!=null) mTab=true;
+
+        // if no movie selected, inflate blank fragment
+        if (intent !=null && !intent.hasExtra("Movie Items") && arguments==null) {
+            rootView = inflater.inflate(R.layout.fragment_blank, container, false);
+            return rootView;
+        }
+
         boolean landscape;
         // two different layouts based on orientation
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
@@ -56,7 +69,7 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
         display.getSize(size);
         int displayWidth = size.x;
         int backdropWidth;
-        if (landscape){
+        if (landscape || mTab){
             backdropWidth = displayWidth /2;
         }
         else { backdropWidth = displayWidth; }
@@ -64,88 +77,101 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
         // calculates height based on proportion of backdrop poster
         int backdropHeight = (int) (backdropWidth * 0.562);
         // receive all movie items and position of selected poster
-        Intent intent = getActivity().getIntent();
-        if (intent !=null && intent.hasExtra("Movie Items") && intent.hasExtra("Position")){
-            int position = intent.getExtras().getInt("Position");
-            ArrayList<MovieItem> movieItems = intent.getExtras().getParcelableArrayList("Movie Items");
 
-            detailMovie = null;
-            // get selected movie
-            if (movieItems != null) {
-                detailMovie = movieItems.get(position);
-            }
-            // get info from move item fields
-            if (detailMovie != null) {
-                movieTitle = detailMovie.getTitle();
-                releaseDate = detailMovie.getReleaseDate();
-                releaseDateFormatted = formatDate(releaseDate);
-                voteAverage = detailMovie.getVoteAverage();
-                overview = detailMovie.getOverview();
-                movieID = detailMovie.getMovieID();
-            }
+        //for phone
+        if (intent !=null && intent.hasExtra("Movie Items") && intent.hasExtra("Position")) {
 
-            mOpenHelper = new MovieDBHelper(getContext());
-            if (mOpenHelper.moviePresent(detailMovie.getMovieID())) {
-                detailMovie.setFavorite(true);
-                ((Button) rootView.findViewById(R.id.toggleButton)).setText("Favorite");
-            }
-            else {
-                detailMovie.setFavorite(false);
-                ((Button) rootView.findViewById(R.id.toggleButton)).setText("Set as Favorite");
-            }
-            // set backdrop size which is partly determined by orientation
-            ImageView detailBackdrop = (ImageView) rootView.findViewById(R.id.backdrop_view);
-            detailBackdrop.getLayoutParams().width= backdropWidth;
-            detailBackdrop.getLayoutParams().height = backdropHeight;
-            detailBackdrop.requestLayout();
-
-            // load backdrop movie poster
-            final String BACKDROP_PATH_BASE_URL = "http://image.tmdb.org/t/p/w342/";
-
-            if (movieItems!=null) {
-                String myPath = BACKDROP_PATH_BASE_URL + movieItems.get(position).getBackdropPath();
-
-                Uri myUri = Uri.parse(myPath);
-                Picasso.with(getContext())
-                        .load(myUri)
-                        .into(detailBackdrop);
-            }
-            // set title and release date
-            ((TextView) rootView.findViewById(R.id.title_text_view)).setText(movieTitle);
-            ((TextView) rootView.findViewById(R.id.release_date_text_view)).setText(releaseDateFormatted);
-
-            // load stars base on vote average
-            LinearLayout starLayout = (LinearLayout) rootView.findViewById(R.id.star_layout);
-
-            Double voteAveAbsolute = Math.floor(voteAverage);
-            Double voteAvePart=voteAverage - voteAveAbsolute;
-
-            for (int i=1;i<=10;i++) {
-                ImageView star = new ImageView(getActivity());
-
-                star.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
-                ));
-
-                star.getLayoutParams().height = getActivity().getResources().getDimensionPixelSize(R.dimen.star_height);
-                star.getLayoutParams().width = getActivity().getResources().getDimensionPixelSize(R.dimen.star_width);
-
-                if (i <= voteAverage) star.setImageResource(R.drawable.starfull);
-                else if (i >= (voteAverage + 1)) star.setImageResource(R.drawable.starempty);
-                else if (voteAvePart < 0.25) star.setImageResource(R.drawable.starempty);
-                else if (voteAvePart >= 0.75) star.setImageResource(R.drawable.starfull);
-                else star.setImageResource(R.drawable.starhalf);
-
-                starLayout.addView(star);
-            }
-            // format and set vote average
-            String voteAverageText = "("+ voteAverage.toString() +"/10)";
-            ((TextView) rootView.findViewById(R.id.vote_average_text_view)).setText(voteAverageText);
-
-            // indent paragraph of synopsis
-            overview = "    " + overview;
-            ((TextView) rootView.findViewById(R.id.overview_text_view)).setText(overview);
+            mPosition = intent.getExtras().getInt("Position");
+            movieItems = intent.getExtras().getParcelableArrayList("Movie Items");
         }
+        //for tablet
+        if (arguments!=null) {
+            mPosition=arguments.getInt("Position");
+            movieItems=arguments.getParcelableArrayList("Movie Items");
+        }
+        //if position is -1 then no movie selected
+        if (mPosition==-1) {
+            rootView = inflater.inflate(R.layout.fragment_blank, container, false);
+            return rootView;
+        }
+
+        detailMovie = null;
+        // get selected movie
+        if (movieItems != null) {
+            detailMovie = movieItems.get(mPosition);
+        }
+        // get info from move item fields
+        if (detailMovie != null) {
+            movieTitle = detailMovie.getTitle();
+            releaseDate = detailMovie.getReleaseDate();
+            releaseDateFormatted = formatDate(releaseDate);
+            voteAverage = detailMovie.getVoteAverage();
+            overview = detailMovie.getOverview();
+            movieID = detailMovie.getMovieID();
+        }
+
+        mOpenHelper = new MovieDBHelper(getContext());
+        if (mOpenHelper.moviePresent(detailMovie.getMovieID())) {
+            detailMovie.setFavorite(true);
+            ((Button) rootView.findViewById(R.id.toggleButton)).setText("Favorite");
+        } else {
+            detailMovie.setFavorite(false);
+            ((Button) rootView.findViewById(R.id.toggleButton)).setText("Set as Favorite");
+        }
+
+        // set backdrop size which is partly determined by orientation
+        ImageView detailBackdrop = (ImageView) rootView.findViewById(R.id.backdrop_view);
+        detailBackdrop.getLayoutParams().width= backdropWidth;
+        detailBackdrop.getLayoutParams().height = backdropHeight;
+        detailBackdrop.requestLayout();
+
+        // load backdrop movie poster
+        final String BACKDROP_PATH_BASE_URL = "http://image.tmdb.org/t/p/w342/";
+
+        if (movieItems!=null) {
+            String myPath = BACKDROP_PATH_BASE_URL + movieItems.get(mPosition).getBackdropPath();
+
+            Uri myUri = Uri.parse(myPath);
+            Picasso.with(getContext())
+                    .load(myUri)
+                    .into(detailBackdrop);
+        }
+        // set title and release date
+        ((TextView) rootView.findViewById(R.id.title_text_view)).setText(movieTitle);
+        ((TextView) rootView.findViewById(R.id.release_date_text_view)).setText(releaseDateFormatted);
+
+        // load stars base on vote average
+        LinearLayout starLayout = (LinearLayout) rootView.findViewById(R.id.star_layout);
+
+        Double voteAveAbsolute = Math.floor(voteAverage);
+        Double voteAvePart=voteAverage - voteAveAbsolute;
+
+        for (int i=1;i<=10;i++) {
+            ImageView star = new ImageView(getActivity());
+
+            star.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ));
+
+            star.getLayoutParams().height = getActivity().getResources().getDimensionPixelSize(R.dimen.star_height);
+            star.getLayoutParams().width = getActivity().getResources().getDimensionPixelSize(R.dimen.star_width);
+
+            if (i <= voteAverage) star.setImageResource(R.drawable.starfull);
+            else if (i >= (voteAverage + 1)) star.setImageResource(R.drawable.starempty);
+            else if (voteAvePart < 0.25) star.setImageResource(R.drawable.starempty);
+            else if (voteAvePart >= 0.75) star.setImageResource(R.drawable.starfull);
+            else star.setImageResource(R.drawable.starhalf);
+
+            starLayout.addView(star);
+        }
+        // format and set vote average
+        String voteAverageText = "("+ voteAverage.toString() +"/10)";
+        ((TextView) rootView.findViewById(R.id.vote_average_text_view)).setText(voteAverageText);
+
+        // indent paragraph of synopsis
+        overview = "    " + overview;
+        ((TextView) rootView.findViewById(R.id.overview_text_view)).setText(overview);
+
         return rootView;
     }
 
@@ -209,6 +235,11 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
             detailMovie.setFavorite(false);
             b.setText("Save as Favorite");
             mOpenHelper.deleteMovies(detailMovie.getMovieID());
+            // remove movie from Grid when removed from favorites
+            if (mTab) ((Callback) getActivity()).updateGrid(movieItems, mPosition);
         }
+    }
+    public interface Callback {
+        public void updateGrid (ArrayList<MovieItem> movieList, int position);
     }
 }

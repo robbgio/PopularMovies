@@ -21,10 +21,16 @@ import com.squareup.picasso.Picasso;
  */
 public class FavoritesAdapter extends CursorAdapter {
 
+    private int mDisplayWidth;
     private Context mContext;
     private static int sLoaderID;
     private int posterWidth;
     private int posterHeight;
+    private boolean mTab=false;
+
+    public void setmTab(boolean tab) {
+        mTab = tab;
+    }
 
     public static class ViewHolder {
         public final ImageView imageView;
@@ -39,13 +45,13 @@ public class FavoritesAdapter extends CursorAdapter {
             Display display = context.getWindowManager().getDefaultDisplay();
             Point size = new Point();
             display.getSize(size);
-            int displayWidth = size.x;
+            mDisplayWidth = size.x;
 
             if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
-                posterWidth = (displayWidth / 4); // four columns if landscape
+                posterWidth = (mDisplayWidth / 4); // four columns if landscape
             }
             else {
-                posterWidth = (displayWidth / 2); // two columns if portrait
+                posterWidth = (mDisplayWidth / 2); // two columns if portrait
             }
             // Calculate height based on proportion of poster
             posterHeight = (int) (posterWidth * 1.5);
@@ -64,6 +70,12 @@ public class FavoritesAdapter extends CursorAdapter {
 
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
+
+        if (mTab){
+            posterWidth = mDisplayWidth/4;
+            posterHeight = (int) (posterWidth * 1.5);
+        }
+
         final String POSTER_PATH_BASE_URL = "http://image.tmdb.org/t/p/w185/";
 
         ViewHolder viewHolder = (ViewHolder) view.getTag();

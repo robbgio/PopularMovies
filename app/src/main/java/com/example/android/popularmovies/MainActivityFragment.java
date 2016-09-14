@@ -13,6 +13,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -41,7 +42,7 @@ import java.util.ArrayList;
 public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     public final String POPULAR = "popular";
     public final String TOP_RATED = "top_rated";
-    public final String FAVORITES ="favorites";
+    public static final String FAVORITES ="favorites";
     private MovieAdapter movieAdapter;
     private FavoritesAdapter mFavoritesAdapter;
     public String currentSortType = POPULAR;
@@ -51,6 +52,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private boolean onCreateViewCompleted = false;
     private Cursor currentFavoritesCursor=null;
     private Boolean prefChanged = false;
+    private boolean mTab=false;
+    private int mPosition=0;
+    private Toolbar mToolbar;
+    private String mTitle;
 
     public MainActivityFragment(){
     }
@@ -68,7 +73,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         super.onActivityCreated(savedInstanceState);
     }
 
-    private void updateMovieItems() {
+    public void updateMovieItems() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         currentSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
         if (currentSortType.equals(FAVORITES)){
@@ -84,12 +89,19 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
 
         if (!onCreateViewCompleted) return false;
+
         MovieDBHelper mdbHelper = new MovieDBHelper(getContext());
         Cursor cursorFavorites = mdbHelper.getAllFavorites();
 
         int movieCount = cursorFavorites.getCount();
-        if (movieCount==0) return false; //nothing to show
 
+        if (movieCount==0) { //nothing to show
+            mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
+            mGridView.setAdapter(mFavoritesAdapter);
+            mToolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
+            mToolbar.setTitle("No Favorites to Show");
+            return false;
+        }
         // if cursor hasn't changed don't update view
         Boolean changed = false;
         if (currentFavoritesCursor!=null){
@@ -102,7 +114,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                         changed = true;
                     }
                 }
-                if (!changed & !prefChanged) return false;
+                //if (!changed & !prefChanged) return false;
             }
         }
 
@@ -129,7 +141,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 movieItems.add(movie);
             }
 
-            mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
+            if (getActivity().findViewById(R.id.movie_detail_container)!=null){
+                mTab=true;
+                mFavoritesAdapter.setmTab(true);
+            }
 
             mFavoritesAdapter.swapCursor(cursorFavorites);
             mGridView.setAdapter(mFavoritesAdapter);
@@ -138,6 +153,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             return true;
         }
         return false;
+    }
+
+    public interface Callback {
+        public void movieSelected(ArrayList<MovieItem> movieItems, int position);
     }
 
     @Override
@@ -156,14 +175,25 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         // detect whether sort type was changed, then update movies if true
         String prefSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
+        mToolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
+        if (prefSortType.equals(this.POPULAR)) mTitle = "Popular";
+        if (prefSortType.equals(this.TOP_RATED)) mTitle = "Top Rated";
+        if (prefSortType.equals(this.FAVORITES)) mTitle = "Favorites";
+        mToolbar.setTitle(mTitle);
         if (!currentSortType.equals(prefSortType) & (currentSortType!="favorites")){
                 prefChanged=true;
+                mPosition=-1; // sets blank detail activity for tablet
+                if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
                 mGridView.setAdapter(movieAdapter);
                 updateMovieItems();
         }
         else {
             if (prefSortType.equals("favorites")) {
-                if (!currentSortType.equals(prefSortType)) prefChanged=true;
+                if (!currentSortType.equals(prefSortType)) {
+                    prefChanged=true;
+                }
+                mPosition=-1; // sets blank detail activity for tablet
+                if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
                 updateMovieItems();
             }
         }
@@ -202,6 +232,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
         movieAdapter = new MovieAdapter(getActivity(), movieItems);
 
+        mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
+
         mGridView = (GridView) rootView.findViewById(R.id.gridview_pics);
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
             mGridView.setNumColumns(4);  // four columns if landscape
@@ -212,11 +244,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Open detail screen if poster is selected
-                Intent detailIntent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtra("Movie Items", movieItems).putExtra("Position", position);
-                startActivity(detailIntent);
 
-
+                ((Callback) getActivity()).movieSelected(movieItems, position);
+                mPosition=position;
             }
         });
         onCreateViewCompleted = true;
@@ -267,7 +297,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             String moviesJsonStr;
             String type = params[0]; // popular or top_rated
             //replace with your API key here:
-            final String myKey = "replaceAPIKeyHere";
+            final String myKey = "Replace with API Key here";
 
             try {
                 final String MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/";
@@ -378,10 +408,14 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             if (items!=null) {
                 movieItems = items;
                 movieAdapter.clear();
+                if (getActivity().findViewById(R.id.movie_detail_container)!=null){
+                    mTab=true;
+                    movieAdapter.setmTab(true);
+                }
                 for (MovieItem movie : items) {
                     movie.setPosterImageView(getContext());
                     // the above loading of ImageViews is so Picasso caches the images before scrolling gridview
-                    // this is only reasonable because only 20 movies, if it was more than that, prob use recyclerview
+                    // this is only reasonable because only 20 movies
                     movieAdapter.add(movie);
                 }
                 mGridView.setAdapter(movieAdapter);

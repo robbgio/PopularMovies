@@ -18,6 +18,8 @@ import java.util.List;
 public class MovieAdapter extends ArrayAdapter<MovieItem> {
     private int posterWidth;
     private int posterHeight;
+    private boolean mTab=false;
+    private int displayWidth;
 
     public MovieAdapter(Activity context, List<MovieItem> movieItems) {
         super(context, 0, movieItems);
@@ -26,7 +28,7 @@ public class MovieAdapter extends ArrayAdapter<MovieItem> {
         Display display = context.getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
-        int displayWidth = size.x;
+        displayWidth = size.x;
 
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
             posterWidth = (displayWidth / 4); // four columns if landscape
@@ -40,6 +42,10 @@ public class MovieAdapter extends ArrayAdapter<MovieItem> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+        if (mTab){
+            posterWidth = displayWidth/4;
+            posterHeight = (int) (posterWidth * 1.5);
+        }
         MovieItem movieItem = getItem(position);
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.image_item, parent, false);
@@ -59,5 +65,8 @@ public class MovieAdapter extends ArrayAdapter<MovieItem> {
                 .load(myUri)
                 .into(movieView);
         return convertView;
+    }
+    public void setmTab(boolean tab){
+        mTab = tab;
     }
 }

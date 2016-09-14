@@ -68,7 +68,6 @@ public class MovieDBHelper extends SQLiteOpenHelper {
         String selection = MovieContract.MovieFavoritesTable._ID + "=?";
         String[] selectionArgs = {sMovieID};
         String limit = "1";
-
         Cursor cursor = db.query(MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,
                 columns, selection, selectionArgs, null, null, null, limit);
         boolean present = (cursor.getCount() > 0);
