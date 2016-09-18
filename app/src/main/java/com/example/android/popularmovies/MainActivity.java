@@ -93,4 +93,7 @@ public class MainActivity extends AppCompatActivity implements MainActivityFragm
         }
         fragment.updateMovieItems();
     }
+    public Boolean getmTab(){
+        return mTab;
+    }
 }

@@ -53,7 +53,7 @@ public class DetailActivityFragment extends Fragment implements View.OnClickList
 
         boolean landscape;
         // two different layouts based on orientation
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
+        if (!mTab && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
             landscape = true;
             rootView = inflater.inflate(R.layout.fragment_detail_landscape, container, false);
         }

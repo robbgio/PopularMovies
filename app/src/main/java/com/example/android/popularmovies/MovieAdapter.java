@@ -30,11 +30,11 @@ public class MovieAdapter extends ArrayAdapter<MovieItem> {
         display.getSize(size);
         displayWidth = size.x;
 
-        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
-            posterWidth = (displayWidth / 4); // four columns if landscape
+        if (!mTab && context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
+            posterWidth = (displayWidth / 4); // four columns on phone if landscape
         }
         else {
-            posterWidth = (displayWidth / 2); // two columns if portrait
+            posterWidth = (displayWidth / 2); // two columns if portrait or tablet
         }
         // Calculate height based on proportion of poster
         posterHeight = (int) (posterWidth * 1.5);

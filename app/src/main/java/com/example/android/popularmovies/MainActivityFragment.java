@@ -49,7 +49,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private GridView mGridView;
     private ArrayList<MovieItem> movieItems = new ArrayList<>();
     private static final int FAVORITES_LOADER_ID = 0;
-    private boolean onCreateViewCompleted = false;
     private Cursor currentFavoritesCursor=null;
     private Boolean prefChanged = false;
     private boolean mTab=false;
@@ -63,6 +62,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putParcelableArrayList("moviesParcel", movieItems);
+        outState.putBoolean("mTab",mTab);
+        outState.putInt("mPosition", mPosition);
+        outState.putString("currentSortType",currentSortType);
         super.onSaveInstanceState(outState);
     }
 
@@ -86,9 +88,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     }
 
     private boolean showFavorites() {
-
-
-        if (!onCreateViewCompleted) return false;
 
         MovieDBHelper mdbHelper = new MovieDBHelper(getContext());
         Cursor cursorFavorites = mdbHelper.getAllFavorites();
@@ -162,6 +161,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public void onStart() {
         Log.d("on start", "on start");
+        mTab = ((MainActivity) getActivity()).getmTab();
+        if (!mTab && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
+            mGridView.setNumColumns(4);  // four columns if landscape on phone
+        }
         // only update movie items if not already loaded
         if (movieItems.isEmpty()){
             updateMovieItems();
@@ -180,9 +183,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         if (prefSortType.equals(this.TOP_RATED)) mTitle = "Top Rated";
         if (prefSortType.equals(this.FAVORITES)) mTitle = "Favorites";
         mToolbar.setTitle(mTitle);
+        // sorted by Popular or Top rated after pref change
         if (!currentSortType.equals(prefSortType) & (currentSortType!="favorites")){
                 prefChanged=true;
-                mPosition=-1; // sets blank detail activity for tablet
+                mPosition=0;
                 if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
                 mGridView.setAdapter(movieAdapter);
                 updateMovieItems();
@@ -191,9 +195,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             if (prefSortType.equals("favorites")) {
                 if (!currentSortType.equals(prefSortType)) {
                     prefChanged=true;
+                    mPosition=0; //
                 }
-                mPosition=-1; // sets blank detail activity for tablet
-                if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
+                if (mTab && mFavoritesAdapter!=null) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
                 updateMovieItems();
             }
         }
@@ -203,13 +207,17 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Log.d("onCreate", "OnCreate");
         // prevent json reload if screen was rotated
         if(savedInstanceState == null || !savedInstanceState.containsKey("moviesParcel")) {
-            updateMovieItems();
+            //updateMovieItems();
+            return;
         }
         else {
             movieItems = savedInstanceState.getParcelableArrayList("moviesParcel");
+            mTab = savedInstanceState.getBoolean("mTab", mTab);
+            mPosition = savedInstanceState.getInt("mPosition", mPosition);
+            currentSortType = savedInstanceState.getString("currentSortType");
         }
     }
 
@@ -227,18 +235,24 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.d("onCreateView", "OnCreateView");
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         setHasOptionsMenu(true);
 
         movieAdapter = new MovieAdapter(getActivity(), movieItems);
+        movieAdapter.setmTab(mTab);
 
         mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
+        mFavoritesAdapter.setmTab(mTab);
 
         mGridView = (GridView) rootView.findViewById(R.id.gridview_pics);
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
-            mGridView.setNumColumns(4);  // four columns if landscape
+
+        if (currentSortType.equals(FAVORITES)) {
+            mGridView.setAdapter(mFavoritesAdapter);
         }
-        mGridView.setAdapter(movieAdapter);
+        else {
+            mGridView.setAdapter(movieAdapter);
+        }
 
         mGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -249,7 +263,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 mPosition=position;
             }
         });
-        onCreateViewCompleted = true;
 
         return rootView;
     }
@@ -297,7 +310,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             String moviesJsonStr;
             String type = params[0]; // popular or top_rated
             //replace with your API key here:
-            final String myKey = "Replace with API Key here";
+            final String myKey = "Replace with your API here";
 
             try {
                 final String MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/";
@@ -418,7 +431,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     // this is only reasonable because only 20 movies
                     movieAdapter.add(movie);
                 }
+                if (mTab) mGridView.setNumColumns(2);
                 mGridView.setAdapter(movieAdapter);
+                if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
             }
         }
     }

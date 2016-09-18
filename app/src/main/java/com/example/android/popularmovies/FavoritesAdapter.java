@@ -51,7 +51,12 @@ public class FavoritesAdapter extends CursorAdapter {
                 posterWidth = (mDisplayWidth / 4); // four columns if landscape
             }
             else {
-                posterWidth = (mDisplayWidth / 2); // two columns if portrait
+                if (mTab) {
+                    posterWidth = (mDisplayWidth / 4); // fourth of display width if portrait on tablet
+                }
+                else {
+                    posterWidth = (mDisplayWidth / 2); // two columns if portrait on phone
+                }
             }
             // Calculate height based on proportion of poster
             posterHeight = (int) (posterWidth * 1.5);
