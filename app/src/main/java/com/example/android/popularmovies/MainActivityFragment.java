@@ -55,6 +55,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private int mPosition=0;
     private Toolbar mToolbar;
     private String mTitle;
+    public static final String myKey = "replace_with_api_key_here";
 
     public MainActivityFragment(){
     }
@@ -310,7 +311,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             String moviesJsonStr;
             String type = params[0]; // popular or top_rated
             //replace with your API key here:
-            final String myKey = "Replace with your API here";
 
             try {
                 final String MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/";
