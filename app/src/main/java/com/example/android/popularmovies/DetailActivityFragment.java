@@ -134,8 +134,11 @@ public class DetailActivityFragment extends Fragment {
 
         detailMovie = null;
         // get selected movie
-        if (movieItems != null) {
+        if (movieItems != null && movieItems.size()>0) {
             detailMovie = movieItems.get(mPosition);
+        }
+        else {
+            return null;
         }
         // get info from move item fields
         if (detailMovie != null) {
@@ -416,38 +419,40 @@ public class DetailActivityFragment extends Fragment {
                     }
                 };
                 Log.d("Trailer 1 name", trailers.get(0).getTrailerName());
-                for (int i = 0; i < trailers.size(); i++) {
+                if (getActivity()!=null) {  // avoid crash on rotate or resume from settings
+                    for (int i = 0; i < trailers.size(); i++) {
 
-                    View trailerView = LayoutInflater.from(getContext()).inflate(R.layout.trailer_icon_name, mTrailerLayout, false);
-                    ImageView trailer = (ImageView) trailerView.findViewById(R.id.trailer_thumbnail);
-                    ImageView playIcon = (ImageView) trailerView.findViewById(R.id.play_icon);
-                    RelativeLayout thumbLayout = (RelativeLayout) trailerView.findViewById(R.id.trailer_thumb_relative);
-                    TextView trailerName = (TextView) trailerView.findViewById(R.id.trailer_name);
+                        View trailerView = LayoutInflater.from(getActivity()).inflate(R.layout.trailer_icon_name, mTrailerLayout, false);
+                        ImageView trailer = (ImageView) trailerView.findViewById(R.id.trailer_thumbnail);
+                        ImageView playIcon = (ImageView) trailerView.findViewById(R.id.play_icon);
+                        RelativeLayout thumbLayout = (RelativeLayout) trailerView.findViewById(R.id.trailer_thumb_relative);
+                        TextView trailerName = (TextView) trailerView.findViewById(R.id.trailer_name);
 
-                    thumbLayout.getLayoutParams().width=thumbWidth;
-                    thumbLayout.getLayoutParams().height=thumbHeight;
-                    trailerView.setPadding(5, 5, 5, 5);
-                    trailerView.setTag(i);
-                    trailerView.setOnClickListener(mTrailerListener);
+                        thumbLayout.getLayoutParams().width = thumbWidth;
+                        thumbLayout.getLayoutParams().height = thumbHeight;
+                        trailerView.setPadding(5, 5, 5, 5);
+                        trailerView.setTag(i);
+                        trailerView.setOnClickListener(mTrailerListener);
 
-                    trailer.getLayoutParams().width=thumbWidth;
-                    trailer.getLayoutParams().height=thumbHeight;
+                        trailer.getLayoutParams().width = thumbWidth;
+                        trailer.getLayoutParams().height = thumbHeight;
 
-                    playIcon.getLayoutParams().width=playIconWidth;
-                    playIcon.getLayoutParams().height=playIconHeight;
+                        playIcon.getLayoutParams().width = playIconWidth;
+                        playIcon.getLayoutParams().height = playIconHeight;
 
-                    String trailerPath = "http://img.youtube.com/vi/" +
-                            trailers.get(i).getTrailerKey() + "/mqdefault.jpg";
+                        String trailerPath = "http://img.youtube.com/vi/" +
+                                trailers.get(i).getTrailerKey() + "/mqdefault.jpg";
 
-                    Uri myUri = Uri.parse(trailerPath);
-                    Picasso.with(getActivity())
-                            .load(myUri)
-                            .into(trailer);
+                        Uri myUri = Uri.parse(trailerPath);
+                        Picasso.with(getActivity())
+                                .load(myUri)
+                                .into(trailer);
 
-                    trailerName.setText(trailers.get(i).getTrailerName());
+                        trailerName.setText(trailers.get(i).getTrailerName());
 
-                    mTrailerLayout.addView(trailerView);
-                    if (i==2) break; // limit 3 trailers shown
+                        mTrailerLayout.addView(trailerView);
+                        if (i == 2) break; // limit 3 trailers shown
+                    }
                 }
             }
             super.onPostExecute(trailers);
@@ -580,25 +585,27 @@ public class DetailActivityFragment extends Fragment {
                         }
                     }
                 };
-                for (int i=0 ; i<mReviewsCount; i++){
-                    int indexState[] = new int[2]; // index 0 is for index of review, index 1 is for state of review i.e. short,truncated,full
-                    indexState[0]=i;
-                    String ellipses = "";
-                    if (reviews.get(i).getReviewContent().length()<=200) {
-                        indexState[1] = SHORTREVIEW;
+                if (getActivity()!=null) {  // avoid crash on rotate or resume from settings
+                    for (int i = 0; i < mReviewsCount; i++) {
+                        int indexState[] = new int[2]; // index 0 is for index of review, index 1 is for state of review i.e. short,truncated,full
+                        indexState[0] = i;
+                        String ellipses = "";
+                        if (reviews.get(i).getReviewContent().length() <= 200) {
+                            indexState[1] = SHORTREVIEW;
+                        } else {
+                            indexState[1] = TRUNCATEDREVIEW;
+                        }
+                        if (indexState[1] != SHORTREVIEW)
+                            ellipses = "...[Touch to see full Review]";
+                        LinearLayout reviewLayout = (LinearLayout) LayoutInflater.from(getActivity()).inflate(R.layout.review_item, mReviewLayout, false);
+                        textReviewAuthor = (TextView) reviewLayout.findViewById(R.id.text_review_author);
+                        textReviewContent = (TextView) reviewLayout.findViewById(R.id.text_review_content);
+                        textReviewAuthor.setText("Review by: " + reviews.get(i).getReviewAuthor());
+                        textReviewContent.setText(reviews.get(i).getReviewContentTruncated() + ellipses);
+                        reviewLayout.setTag(indexState);
+                        reviewLayout.setOnClickListener(mReviewsListener);
+                        mReviewLayout.addView(reviewLayout);
                     }
-                    else {
-                        indexState[1] = TRUNCATEDREVIEW;
-                    }
-                    if (indexState[1]!=SHORTREVIEW) ellipses ="...[Touch to see full Review]";
-                    LinearLayout reviewLayout = (LinearLayout) LayoutInflater.from(getContext()).inflate(R.layout.review_item, mReviewLayout, false);
-                    textReviewAuthor = (TextView) reviewLayout.findViewById(R.id.text_review_author);
-                    textReviewContent = (TextView) reviewLayout.findViewById(R.id.text_review_content);
-                    textReviewAuthor.setText("Review by: " + reviews.get(i).getReviewAuthor());
-                    textReviewContent.setText(reviews.get(i).getReviewContentTruncated() + ellipses);
-                    reviewLayout.setTag(indexState);
-                    reviewLayout.setOnClickListener(mReviewsListener);
-                    mReviewLayout.addView(reviewLayout);
                 }
             }
             super.onPostExecute(reviews);

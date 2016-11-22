@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements MainActivityFragm
         if (sortType.equals(MainActivityFragment.FAVORITES) && mTab){
             DetailActivityFragment dfrag = new DetailActivityFragment();
             Bundle args = new Bundle();
+            movieList.remove(position);
             args.putParcelableArrayList("Movie Items", movieList);
             position -=1;
             args.putInt("Position", position);

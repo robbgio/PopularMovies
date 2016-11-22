@@ -76,37 +76,41 @@
         android:textSize="14sp"
         android:layout_marginLeft="3dp"
         android:layout_marginRight="3dp"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="15dp"
+        android:paddingBottom="20dp"
+        android:layout_gravity="center_horizontal">
 
-    <Button
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:id="@+id/heart"
+            android:layout_gravity="center_vertical"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save as Favorite"
+            android:id="@+id/toggleButton"
+            android:layout_gravity="center_vertical"
+            android:height="40dp"
+            android:layout_marginLeft="20dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Save as Favorite"
-        android:id="@+id/toggleButton"
-        android:layout_gravity="center_horizontal"
-        />
-    <TextView
-        android:layout_width="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/trailer_layout">
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/moretext"
-        android:text="Once a upon a time there was a movie and it was selected as a part of a popular movie app.  And then someone wanted to scroll to see more text so they kept scrolling and scrolling and scrolling."
-        android:layout_gravity="start"
-        android:padding="10dp"
-        android:gravity="start"
-        android:textColor="@color/textColor"
-        android:textSize="14sp"
-        android:layout_marginLeft="3dp"
-        android:layout_marginRight="3dp"/>
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/moretext2"
-        android:text="Once a upon a time there was a movie and it was selected as a part of a popular movie app.  And then someone wanted to scroll to see more text so they kept scrolling and scrolling and scrolling."
-        android:layout_gravity="start"
-        android:padding="10dp"
-        android:gravity="start"
-        android:textColor="@color/textColor"
-        android:textSize="14sp"
-        android:layout_marginLeft="3dp"
-        android:layout_marginRight="3dp"/>
+        android:orientation="vertical"
+        android:id="@+id/reviews">
+    </LinearLayout>
 </LinearLayout>
 </ScrollView>

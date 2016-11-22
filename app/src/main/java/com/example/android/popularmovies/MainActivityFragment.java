@@ -55,7 +55,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private int mPosition=0;
     private Toolbar mToolbar;
     private String mTitle;
-    public static final String myKey = "replace_with_api_key_here";
+    public static final String myKey = "Replace with API Key";
 
     public MainActivityFragment(){
     }
