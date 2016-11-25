@@ -90,7 +90,7 @@ public class DetailActivityFragment extends Fragment {
         mFavoriteListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                toggleFavorite(v);
+                toggleFavorite();
             }
         };
 
@@ -153,11 +153,11 @@ public class DetailActivityFragment extends Fragment {
         mOpenHelper = new MovieDBHelper(getContext());
         if (mOpenHelper.moviePresent(detailMovie.getMovieID())) {
             detailMovie.setFavorite(true);
-            ((Button) rootView.findViewById(R.id.toggleButton)).setText("Remove from Favorites");
+            ((Button) rootView.findViewById(R.id.toggleButton)).setText(getString(R.string.remove_from_favorites));
             mHeartView.setImageResource(R.drawable.heart);
         } else {
             detailMovie.setFavorite(false);
-            ((Button) rootView.findViewById(R.id.toggleButton)).setText("Save as Favorite");
+            ((Button) rootView.findViewById(R.id.toggleButton)).setText(getString(R.string.save_as_favorite));
             mHeartView.setImageResource(R.drawable.emptyheart);
         }
 
@@ -268,11 +268,11 @@ public class DetailActivityFragment extends Fragment {
         releaseDate = monthName + " " + day + ", " + year;
         return releaseDate;
     }
-    public void toggleFavorite (View view){
+    public void toggleFavorite (){
         mOpenHelper = new MovieDBHelper(getContext());
         if (!detailMovie.getFavorite()){
             detailMovie.setFavorite(true);
-            toggleButton.setText("Remove from Favorites");
+            toggleButton.setText(getString(R.string.remove_from_favorites));
             mHeartView.setImageResource(R.drawable.heart);
             mOpenHelper.insertMovies(detailMovie.getMovieID(), detailMovie.getTitle(), detailMovie.getPosterPath(),
                     detailMovie.getBackdropPath(), detailMovie.getReleaseDate(),
@@ -280,7 +280,7 @@ public class DetailActivityFragment extends Fragment {
         }
         else {
             detailMovie.setFavorite(false);
-            toggleButton.setText("Save as Favorite");
+            toggleButton.setText(getString(R.string.save_as_favorite));
             mHeartView.setImageResource(R.drawable.emptyheart);
             mOpenHelper.deleteMovies(detailMovie.getMovieID());
             // remove movie from Grid when removed from favorites
@@ -571,7 +571,7 @@ public class DetailActivityFragment extends Fragment {
                         int indexState[] = (int[]) v.getTag();
                         int reviewClicked = indexState[0];
                         int state = indexState[1];
-                        String ellipses="...[Touch to see full Review];";
+                        String ellipses=getString(R.string.ellipses);
                         TextView contentReview = (TextView) v.findViewById(R.id.text_review_content);
                         if (state==TRUNCATEDREVIEW) {
                             contentReview.setText(mReviews.get(reviewClicked).getReviewContent());
@@ -579,13 +579,14 @@ public class DetailActivityFragment extends Fragment {
                             v.setTag(indexState);
                         }
                         else if (state==FULLREVIEW){
-                            contentReview.setText(mReviews.get(reviewClicked).getReviewContentTruncated() + ellipses);
+                            String content = mReviews.get(reviewClicked).getReviewContentTruncated() + ellipses;
+                            contentReview.setText(content);
                             indexState[1] = TRUNCATEDREVIEW;
                             v.setTag(indexState);
                         }
                     }
                 };
-                if (getActivity()!=null) {  // avoid crash on rotate or resume from settings
+                if (getActivity()!=null) {
                     for (int i = 0; i < mReviewsCount; i++) {
                         int indexState[] = new int[2]; // index 0 is for index of review, index 1 is for state of review i.e. short,truncated,full
                         indexState[0] = i;
@@ -596,12 +597,13 @@ public class DetailActivityFragment extends Fragment {
                             indexState[1] = TRUNCATEDREVIEW;
                         }
                         if (indexState[1] != SHORTREVIEW)
-                            ellipses = "...[Touch to see full Review]";
+                            ellipses = getString(R.string.ellipses);
                         LinearLayout reviewLayout = (LinearLayout) LayoutInflater.from(getActivity()).inflate(R.layout.review_item, mReviewLayout, false);
                         textReviewAuthor = (TextView) reviewLayout.findViewById(R.id.text_review_author);
                         textReviewContent = (TextView) reviewLayout.findViewById(R.id.text_review_content);
-                        textReviewAuthor.setText("Review by: " + reviews.get(i).getReviewAuthor());
-                        textReviewContent.setText(reviews.get(i).getReviewContentTruncated() + ellipses);
+                        textReviewAuthor.setText(getString(R.string.review_by, reviews.get(i).getReviewAuthor()));
+                        String content = reviews.get(i).getReviewContentTruncated() + ellipses;
+                        textReviewContent.setText(content);
                         reviewLayout.setTag(indexState);
                         reviewLayout.setOnClickListener(mReviewsListener);
                         mReviewLayout.addView(reviewLayout);

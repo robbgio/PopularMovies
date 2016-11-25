@@ -55,7 +55,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private int mPosition=0;
     private Toolbar mToolbar;
     private String mTitle;
-    public static final String myKey = "Replace with API Key";
+    public static final String myKey = "Replace_with_your_api_key_here";
 
     public MainActivityFragment(){
     }
@@ -114,7 +114,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                         changed = true;
                     }
                 }
-                //if (!changed & !prefChanged) return false;
+                if (!changed && !prefChanged) return false;
             }
         }
 
@@ -156,7 +156,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     }
 
     public interface Callback {
-        public void movieSelected(ArrayList<MovieItem> movieItems, int position);
+        void movieSelected(ArrayList<MovieItem> movieItems, int position);
     }
 
     @Override
@@ -175,17 +175,17 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onResume() {  // called after coming back from settings activity
-        Log.d("On resume","on resume");
+        Log.d("On resume","on resume main activity");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         // detect whether sort type was changed, then update movies if true
         String prefSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
         mToolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
         if (prefSortType.equals(this.POPULAR)) mTitle = "Popular";
         if (prefSortType.equals(this.TOP_RATED)) mTitle = "Top Rated";
-        if (prefSortType.equals(this.FAVORITES)) mTitle = "Favorites";
+        if (prefSortType.equals(FAVORITES)) mTitle = "Favorites";
         mToolbar.setTitle(mTitle);
         // sorted by Popular or Top rated after pref change
-        if (!currentSortType.equals(prefSortType) & (currentSortType!="favorites")){
+        if (!currentSortType.equals(prefSortType) & (!prefSortType.equals("favorites"))){
                 prefChanged=true;
                 mPosition=0;
                 if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
@@ -196,6 +196,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             if (prefSortType.equals("favorites")) {
                 if (!currentSortType.equals(prefSortType)) {
                     prefChanged=true;
+                    movieItems.clear();
                     mPosition=0; //
                 }
                 if (mTab && mFavoritesAdapter!=null) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
@@ -208,13 +209,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d("onCreate", "OnCreate");
-        // prevent json reload if screen was rotated
-        if(savedInstanceState == null || !savedInstanceState.containsKey("moviesParcel")) {
-            //updateMovieItems();
-            return;
-        }
-        else {
+        if(savedInstanceState != null && savedInstanceState.containsKey("moviesParcel")) {
             movieItems = savedInstanceState.getParcelableArrayList("moviesParcel");
             mTab = savedInstanceState.getBoolean("mTab", mTab);
             mPosition = savedInstanceState.getInt("mPosition", mPosition);
@@ -236,7 +231,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.d("onCreateView", "OnCreateView");
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         setHasOptionsMenu(true);
 
