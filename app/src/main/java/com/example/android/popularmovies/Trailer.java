@@ -1,8 +1,5 @@
 package com.example.android.popularmovies;
 
-/**
- * Created by rgiordano on 9/17/2016.
- */
 public class Trailer {
     private String trailerID;
     private String trailerName;

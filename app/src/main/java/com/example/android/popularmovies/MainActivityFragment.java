@@ -24,8 +24,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
-import com.example.android.popularmovies.Data.MovieContract;
-import com.example.android.popularmovies.Data.MovieDBHelper;
+import com.example.android.popularmovies.data.MovieContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,7 +54,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private int mPosition=0;
     private Toolbar mToolbar;
     private String mTitle;
-    public static final String myKey = "Replace_with_your_api_key_here";
+    public static final String myKey = "replacewithyourAPIkeyhere";
 
     public MainActivityFragment(){
     }
@@ -90,10 +89,13 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private boolean showFavorites() {
 
-        MovieDBHelper mdbHelper = new MovieDBHelper(getContext());
-        Cursor cursorFavorites = mdbHelper.getAllFavorites();
-
-        int movieCount = cursorFavorites.getCount();
+        Cursor cursorFavorites = getContext().getContentResolver().query(MovieContract.MovieFavoritesTable.CONTENT_URI,null,null,null,null);
+        //MovieDBHelper mdbHelper = new MovieDBHelper(getContext());
+        //Cursor cursorFavorites = mdbHelper.getAllFavorites();
+        int movieCount=0;
+        if (cursorFavorites!=null) {
+            movieCount = cursorFavorites.getCount();
+        }
 
         if (movieCount==0) { //nothing to show
             mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
@@ -161,7 +163,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onStart() {
-        Log.d("on start", "on start");
         mTab = ((MainActivity) getActivity()).getmTab();
         if (!mTab && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE){
             mGridView.setNumColumns(4);  // four columns if landscape on phone
@@ -175,7 +176,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onResume() {  // called after coming back from settings activity
-        Log.d("On resume","on resume main activity");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         // detect whether sort type was changed, then update movies if true
         String prefSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
@@ -406,7 +406,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 movieList.get(i).setMovieID(movieID);
 
             }
-            return movieList; // return Arraylist of MovieItems with all fields loaded
+            return movieList; // return ArrayList of MovieItems with all fields loaded
         }
 
         @Override

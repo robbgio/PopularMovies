@@ -8,6 +8,11 @@
     <string name="title_activity_detail">Movie Details</string>
     <string name="remove_from_favorites">Remove from Favorites</string>
     <string name="save_as_favorite">Save as Favorite</string>
-    <string name="ellipses">...[Touch to see full Review]</string>
+    <string name="ellipses">&#8230;[Touch to see full Review]</string>
     <string name="review_by">Review by: %1$s</string>
+    <string name="movie_backdrop">Movie Backdrop</string>
+    <string name="movie_poster">Movie Poster</string>
+    <string name="heart">Heart</string>
+    <string name="trailer_thumbnail">Trailer thumbnail</string>
+    <string name="youtube_icon">YouTube play icon</string>
 </resources>

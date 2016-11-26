@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/background_material_light"
+    android:background="@color/lightBackground"
     android:layout_margin="10dp"
     android:id="@+id/review_item">
 <TextView

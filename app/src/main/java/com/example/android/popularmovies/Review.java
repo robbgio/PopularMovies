@@ -1,8 +1,5 @@
 package com.example.android.popularmovies;
 
-/**
- * Created by rgiordano on 9/21/2016.
- */
 public class Review {
 
     private String reviewID;

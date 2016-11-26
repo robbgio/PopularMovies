@@ -13,12 +13,9 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
 
-import com.example.android.popularmovies.Data.MovieContract;
+import com.example.android.popularmovies.data.MovieContract;
 import com.squareup.picasso.Picasso;
 
-/**
- * Created by rgiordano on 8/31/2016.
- */
 public class FavoritesAdapter extends CursorAdapter {
 
     private int mDisplayWidth;

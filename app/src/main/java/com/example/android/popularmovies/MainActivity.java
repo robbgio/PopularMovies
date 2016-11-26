@@ -85,7 +85,8 @@ public class MainActivity extends AppCompatActivity implements MainActivityFragm
             Bundle args = new Bundle();
             movieList.remove(position);
             args.putParcelableArrayList("Movie Items", movieList);
-            position -=1;
+            if (position==0 && movieList.size()>0) position=0;
+            else position-=1;
             args.putInt("Position", position);
             dfrag.setArguments(args);
             getSupportFragmentManager().beginTransaction()

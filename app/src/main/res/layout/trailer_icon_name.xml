@@ -10,13 +10,16 @@
         <ImageView  android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/trailer_thumbnail"
+            android:contentDescription="@string/trailer_thumbnail"
             />
         <ImageView  android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/yt_play_icon"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
-            android:id="@+id/play_icon"/>
+            android:layout_alignParentEnd="true"
+            android:id="@+id/play_icon"
+            android:contentDescription="@string/youtube_icon"/>
     </RelativeLayout>
     <TextView
         android:layout_width="wrap_content"
@@ -25,6 +28,7 @@
         android:layout_gravity="center"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:text="Name of Trailer"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
         android:paddingLeft="10dp"/>
 </LinearLayout>

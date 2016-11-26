@@ -1,8 +1,10 @@
 package com.example.android.popularmovies;
 
 import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -19,7 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.example.android.popularmovies.Data.MovieDBHelper;
+import com.example.android.popularmovies.data.MovieContract;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
@@ -42,7 +44,6 @@ public class DetailActivityFragment extends Fragment {
     private String overview;
     MovieItem detailMovie;
     Button toggleButton;
-    private MovieDBHelper mOpenHelper;
     private int movieID;
     int mPosition;
     int displayWidth;
@@ -150,15 +151,20 @@ public class DetailActivityFragment extends Fragment {
             movieID = detailMovie.getMovieID();
         }
 
-        mOpenHelper = new MovieDBHelper(getContext());
-        if (mOpenHelper.moviePresent(detailMovie.getMovieID())) {
-            detailMovie.setFavorite(true);
-            ((Button) rootView.findViewById(R.id.toggleButton)).setText(getString(R.string.remove_from_favorites));
-            mHeartView.setImageResource(R.drawable.heart);
-        } else {
-            detailMovie.setFavorite(false);
-            ((Button) rootView.findViewById(R.id.toggleButton)).setText(getString(R.string.save_as_favorite));
-            mHeartView.setImageResource(R.drawable.emptyheart);
+        Cursor isPresentCursor = getActivity().getContentResolver().query(MovieContract.MovieFavoritesTable.CONTENT_URI.buildUpon().appendPath(
+                "" + detailMovie.getMovieID()).build(),null,null,null,null);
+
+        if (isPresentCursor!=null) {
+            if (isPresentCursor.getCount()>0) {
+                detailMovie.setFavorite(true);
+                ((Button) rootView.findViewById(R.id.toggleButton)).setText(getString(R.string.remove_from_favorites));
+                mHeartView.setImageResource(R.drawable.heart);
+            } else {
+                detailMovie.setFavorite(false);
+                ((Button) rootView.findViewById(R.id.toggleButton)).setText(getString(R.string.save_as_favorite));
+                mHeartView.setImageResource(R.drawable.emptyheart);
+            }
+            isPresentCursor.close();
         }
 
         // set backdrop size which is partly determined by orientation
@@ -269,20 +275,30 @@ public class DetailActivityFragment extends Fragment {
         return releaseDate;
     }
     public void toggleFavorite (){
-        mOpenHelper = new MovieDBHelper(getContext());
+        //mOpenHelper = new MovieDBHelper(getContext());
         if (!detailMovie.getFavorite()){
             detailMovie.setFavorite(true);
             toggleButton.setText(getString(R.string.remove_from_favorites));
             mHeartView.setImageResource(R.drawable.heart);
-            mOpenHelper.insertMovies(detailMovie.getMovieID(), detailMovie.getTitle(), detailMovie.getPosterPath(),
-                    detailMovie.getBackdropPath(), detailMovie.getReleaseDate(),
-                    detailMovie.getOverview(), detailMovie.getVoteAverage());
+            ContentValues insertValues = new ContentValues();
+            insertValues.put(MovieContract.MovieFavoritesTable._ID, detailMovie.getMovieID());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_TITLE, detailMovie.getTitle());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_POSTER_PATH, detailMovie.getPosterPath());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_BACKDROP_PATH, detailMovie.getBackdropPath());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_DATE, detailMovie.getReleaseDate());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW, detailMovie.getOverview());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE, detailMovie.getVoteAverage());
+            getActivity().getContentResolver().insert(MovieContract.MovieFavoritesTable.CONTENT_URI,insertValues);
+            //mOpenHelper.insertMovies(detailMovie.getMovieID(), detailMovie.getTitle(), detailMovie.getPosterPath(),
+            //        detailMovie.getBackdropPath(), detailMovie.getReleaseDate(),
+            //        detailMovie.getOverview(), detailMovie.getVoteAverage());
         }
         else {
             detailMovie.setFavorite(false);
             toggleButton.setText(getString(R.string.save_as_favorite));
             mHeartView.setImageResource(R.drawable.emptyheart);
-            mOpenHelper.deleteMovies(detailMovie.getMovieID());
+            getActivity().getContentResolver().delete(MovieContract.MovieFavoritesTable.CONTENT_URI.buildUpon().appendPath(
+                    Integer.toString(detailMovie.getMovieID())).build(),null,null);
             // remove movie from Grid when removed from favorites
             if (mTab) ((Callback) getActivity()).updateGrid(movieItems, mPosition);
         }
@@ -404,12 +420,10 @@ public class DetailActivityFragment extends Fragment {
                 mTrailerListener = new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Log.d("Trailer# clicked",v.getTag().toString());
                         int indexClicked = (int) v.getTag();
                         String videoId = mTrailerList.get(indexClicked).getTrailerKey();
                         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" +videoId));
                         intent.putExtra("VIDEO_ID", videoId);
-                        Log.d("VideoID",videoId);
                         try {
                             startActivity(intent);
                         }
@@ -418,7 +432,6 @@ public class DetailActivityFragment extends Fragment {
                         }
                     }
                 };
-                Log.d("Trailer 1 name", trailers.get(0).getTrailerName());
                 if (getActivity()!=null) {  // avoid crash on rotate or resume from settings
                     for (int i = 0; i < trailers.size(); i++) {
 

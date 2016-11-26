@@ -1,18 +1,15 @@
-package com.example.android.popularmovies.Data;
+package com.example.android.popularmovies.data;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
-/**
- * Created by rgiordano on 8/31/2016.
- */
 public class MovieContract {
 
-    public static final String CONTENT_AUTHORITY = "com.exmample.android.popularmovies.app";
+    public static final String CONTENT_AUTHORITY = "com.example.android.popularmovies.data";
 
-    public static final Uri BASE_CONTENT_URI = Uri.parse("content;//" + CONTENT_AUTHORITY);
+    public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
 
     public static final class MovieFavoritesTable implements BaseColumns{
         public static final String MOVIE_FAVORITES_TABLE = "favorites";

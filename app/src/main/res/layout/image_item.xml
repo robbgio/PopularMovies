@@ -9,5 +9,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="2dp"
-        android:id="@+id/movie_image_view"/>
+        android:id="@+id/movie_image_view"
+        android:contentDescription="@string/movie_poster"/>
 </LinearLayout>

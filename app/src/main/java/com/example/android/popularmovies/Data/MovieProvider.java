@@ -1,4 +1,4 @@
-package com.example.android.popularmovies.Data;
+package com.example.android.popularmovies.data;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 public class MovieProvider extends ContentProvider {
@@ -34,7 +35,7 @@ public class MovieProvider extends ContentProvider {
 
     @Nullable
     @Override
-    public String getType(Uri uri) {
+    public String getType(@NonNull Uri uri) {
         final int match = sUriMatcher.match(uri);
 
         switch (match){
@@ -51,7 +52,7 @@ public class MovieProvider extends ContentProvider {
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+    public Cursor query(@NonNull Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         Cursor returnCursor;
         switch(sUriMatcher.match(uri)){
             case FAVORITES:{
@@ -84,7 +85,7 @@ public class MovieProvider extends ContentProvider {
     }
 
     @Override
-    public int delete(Uri uri, String selection, String[] selectionArgs) {
+    public int delete(@NonNull Uri uri, String selection, String[] selectionArgs) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         final int match = sUriMatcher.match(uri);
         int recordsDeleted;
@@ -93,15 +94,11 @@ public class MovieProvider extends ContentProvider {
                 recordsDeleted = db.delete(
                         MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,
                         selection, selectionArgs);
-                db.execSQL("DELETE FROM SQLITE_SEQUENCE WHERE NAME = '" +
-                        MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE + "'");
                 break;
             case FAVORITES_ID:
                 recordsDeleted = db.delete(MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE,
                         MovieContract.MovieFavoritesTable._ID + " = ?",
                         new String[]{String.valueOf(ContentUris.parseId(uri))});
-                db.execSQL("DELETE FROM SQLITE_SEQUENCE WHERE NAME = '" +
-                        MovieContract.MovieFavoritesTable.MOVIE_FAVORITES_TABLE + "'");
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported uri: " + uri);
@@ -110,7 +107,7 @@ public class MovieProvider extends ContentProvider {
     }
 
     @Override
-    public int bulkInsert(Uri uri, ContentValues[] values) {
+    public int bulkInsert(@NonNull Uri uri, @NonNull ContentValues[] values) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         final int match = sUriMatcher.match(uri);
         switch(match){
@@ -128,6 +125,7 @@ public class MovieProvider extends ContentProvider {
                                     null, value);
                         }
                         catch (SQLiteConstraintException e) {
+                            throw new SQLiteConstraintException("Values don't match requirements");
                         }
                         if (id != -1){
                             recordsInserted++;
@@ -140,7 +138,9 @@ public class MovieProvider extends ContentProvider {
                     db.endTransaction();
                 }
                 if (recordsInserted > 0) {
-                    getContext().getContentResolver().notifyChange(uri,null);
+                    if (getContext()!=null) {
+                        getContext().getContentResolver().notifyChange(uri, null);
+                    }
                 }
                 return recordsInserted;
             default:
@@ -149,9 +149,9 @@ public class MovieProvider extends ContentProvider {
     }
 
     @Override
-    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public int update(@NonNull Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-        int recordsUpdated = 0;
+        int recordsUpdated=0;
 
         if (values == null){
             throw new IllegalArgumentException("Null Content Values");
@@ -177,14 +177,16 @@ public class MovieProvider extends ContentProvider {
 
         }
         if (recordsUpdated > 0 ){
-            getContext().getContentResolver().notifyChange(uri, null);
+            if (getContext()!=null) {
+                getContext().getContentResolver().notifyChange(uri, null);
+            }
         }
         return recordsUpdated;
     }
 
     @Nullable
     @Override
-    public Uri insert(Uri uri, ContentValues values) {
+    public Uri insert(@NonNull Uri uri, ContentValues values) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         Uri returnUri;
         switch(sUriMatcher.match(uri)){
@@ -203,7 +205,9 @@ public class MovieProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unsupported Uri: " + uri);
             }
         }
-        getContext().getContentResolver().notifyChange(uri,null);
+        if (getContext()!=null) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
         return returnUri;
     }
 }

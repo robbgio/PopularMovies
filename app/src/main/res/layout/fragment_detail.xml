@@ -5,9 +5,9 @@
 <LinearLayout
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/lightBackround"
+    android:background="@color/lightBackground"
     tools:context="com.example.android.popularmovies.DetailActivityFragment"
     tools:showIn="@layout/activity_detail">
     <ImageView
@@ -15,7 +15,8 @@
         android:layout_height="wrap_content"
         android:padding="3dp"
         android:id="@+id/backdrop_view"
-        android:scaleType="fitXY"/>
+        android:scaleType="fitXY"
+        android:contentDescription="@string/movie_backdrop"/>
 
     <TextView
         android:layout_width="match_parent"
@@ -88,14 +89,16 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:id="@+id/heart"
-            android:layout_gravity="center_vertical"/>
+            android:layout_gravity="center_vertical"
+            android:contentDescription="@string/heart"/>
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Save as Favorite"
+            android:text="@string/save_as_favorite"
             android:id="@+id/toggleButton"
             android:layout_gravity="center_vertical"
             android:height="40dp"
+            android:layout_marginStart="20dp"
             android:layout_marginLeft="20dp"/>
 
     </LinearLayout>
