@@ -141,7 +141,7 @@ public class DetailActivityFragment extends Fragment {
         else {
             return null;
         }
-        // get info from move item fields
+        // get info from movie item fields
         if (detailMovie != null) {
             movieTitle = detailMovie.getTitle();
             releaseDate = detailMovie.getReleaseDate();
@@ -224,9 +224,6 @@ public class DetailActivityFragment extends Fragment {
         mTrailerLayout = (LinearLayout) rootView.findViewById(R.id.trailer_layout);
         mReviewLayout = (LinearLayout) rootView.findViewById(R.id.reviews);
 
-        //mTextReviewAuthor = (TextView) rootView.findViewById(R.id.text_review_author);
-        //mTextReviewContent = (TextView) rootView.findViewById(R.id.text_review_content);
-
         new GetTrailerList().execute(Integer.toString(movieID));
         new GetReviews().execute(Integer.toString(movieID));
 
@@ -275,7 +272,6 @@ public class DetailActivityFragment extends Fragment {
         return releaseDate;
     }
     public void toggleFavorite (){
-        //mOpenHelper = new MovieDBHelper(getContext());
         if (!detailMovie.getFavorite()){
             detailMovie.setFavorite(true);
             toggleButton.setText(getString(R.string.remove_from_favorites));
@@ -289,9 +285,6 @@ public class DetailActivityFragment extends Fragment {
             insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW, detailMovie.getOverview());
             insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE, detailMovie.getVoteAverage());
             getActivity().getContentResolver().insert(MovieContract.MovieFavoritesTable.CONTENT_URI,insertValues);
-            //mOpenHelper.insertMovies(detailMovie.getMovieID(), detailMovie.getTitle(), detailMovie.getPosterPath(),
-            //        detailMovie.getBackdropPath(), detailMovie.getReleaseDate(),
-            //        detailMovie.getOverview(), detailMovie.getVoteAverage());
         }
         else {
             detailMovie.setFavorite(false);

@@ -81,7 +81,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         if (currentSortType.equals(FAVORITES)){
             showFavorites();
         }
-        else {
+        else { // popular or top rated
             new FetchMoviesTask().execute(currentSortType);
             prefChanged=false;
         }
@@ -90,8 +90,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private boolean showFavorites() {
 
         Cursor cursorFavorites = getContext().getContentResolver().query(MovieContract.MovieFavoritesTable.CONTENT_URI,null,null,null,null);
-        //MovieDBHelper mdbHelper = new MovieDBHelper(getContext());
-        //Cursor cursorFavorites = mdbHelper.getAllFavorites();
         int movieCount=0;
         if (cursorFavorites!=null) {
             movieCount = cursorFavorites.getCount();
@@ -101,7 +99,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             mFavoritesAdapter = new FavoritesAdapter(getActivity(), null, 0, FAVORITES_LOADER_ID);
             mGridView.setAdapter(mFavoritesAdapter);
             mToolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
-            mToolbar.setTitle("No Favorites to Show");
+            mToolbar.setTitle(getString(R.string.no_favorites_title));
             return false;
         }
         // if cursor hasn't changed don't update view
@@ -120,6 +118,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             }
         }
 
+        // Update movieItems with cursor retrieved from database
         if (movieItems!=null) movieItems.clear();
         if (cursorFavorites.moveToFirst()) {
             for (int i = 0; i < movieCount; i++) {
@@ -180,9 +179,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         // detect whether sort type was changed, then update movies if true
         String prefSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
         mToolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
-        if (prefSortType.equals(this.POPULAR)) mTitle = "Popular";
-        if (prefSortType.equals(this.TOP_RATED)) mTitle = "Top Rated";
-        if (prefSortType.equals(FAVORITES)) mTitle = "Favorites";
+        if (prefSortType.equals(this.POPULAR)) mTitle = getString(R.string.popular_title);
+        if (prefSortType.equals(this.TOP_RATED)) mTitle = getString(R.string.top_rated_title);
+        if (prefSortType.equals(FAVORITES)) mTitle = getString(R.string.favorites_title);
         mToolbar.setTitle(mTitle);
         // sorted by Popular or Top rated after pref change
         if (!currentSortType.equals(prefSortType) & (!prefSortType.equals("favorites"))){

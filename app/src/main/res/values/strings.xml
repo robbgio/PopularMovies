@@ -15,4 +15,8 @@
     <string name="heart">Heart</string>
     <string name="trailer_thumbnail">Trailer thumbnail</string>
     <string name="youtube_icon">YouTube play icon</string>
+    <string name="popular_title">Popular</string>
+    <string name="top_rated_title">Top Rated</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="no_favorites_title">No Favorites to Show</string>
 </resources>
