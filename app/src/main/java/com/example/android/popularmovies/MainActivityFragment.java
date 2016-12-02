@@ -1,12 +1,16 @@
 package com.example.android.popularmovies;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -15,6 +19,7 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -23,6 +28,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.android.popularmovies.data.MovieContract;
 
@@ -53,8 +61,11 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private boolean mTab=false;
     private int mPosition=0;
     private Toolbar mToolbar;
+    private boolean mOnline;
     private String mTitle;
-    public static final String myKey = "replacewithyourAPIkeyhere";
+    public static final String myKey = "";
+    private View mRootView;
+    private View.OnClickListener mRetryNetwork;
 
     public MainActivityFragment(){
     }
@@ -82,13 +93,39 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             showFavorites();
         }
         else { // popular or top rated
+            if (mOnline) {
+                View offlineImage = getActivity().findViewById(R.id.offline_image);
+                TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
+                offlineImage.setBackground(null);
+                offlineImage.setLayoutParams(new LinearLayout.LayoutParams
+                        (ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                offlineText.setText("");
+            }
             new FetchMoviesTask().execute(currentSortType);
             prefChanged=false;
         }
     }
 
     private boolean showFavorites() {
+        if (!isOnline()) {
+            View offlineImage = getActivity().findViewById(R.id.offline_image);
+            TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
+            offlineImage.setBackgroundResource(R.drawable.noconnection);
+            offlineImage.getBackground().setAlpha(100);
+            offlineImage.setOnClickListener(mRetryNetwork);
+            offlineText.setText("");
+            mOnline=false;
+        }
+        else {
+            mOnline=true;
+            View offlineImage = getActivity().findViewById(R.id.offline_image);
+            TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
+            offlineImage.setBackground(null);
+            offlineImage.setLayoutParams(new LinearLayout.LayoutParams
+                    (ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            offlineText.setText("");
 
+        }
         Cursor cursorFavorites = getContext().getContentResolver().query(MovieContract.MovieFavoritesTable.CONTENT_URI,null,null,null,null);
         int movieCount=0;
         if (cursorFavorites!=null) {
@@ -114,7 +151,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                         changed = true;
                     }
                 }
-                if (!changed && !prefChanged) return false;
+                if (!changed && !prefChanged && mOnline) return false;
             }
         }
 
@@ -183,8 +220,15 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         if (prefSortType.equals(this.TOP_RATED)) mTitle = getString(R.string.top_rated_title);
         if (prefSortType.equals(FAVORITES)) mTitle = getString(R.string.favorites_title);
         mToolbar.setTitle(mTitle);
+
+        if (isOnline()) {
+            mOnline=true;
+        }
+        else {
+            mOnline=false;
+        }
         // sorted by Popular or Top rated after pref change
-        if (!currentSortType.equals(prefSortType) & (!prefSortType.equals("favorites"))){
+        if ((!currentSortType.equals(prefSortType) && (!prefSortType.equals("favorites"))) || !mOnline){
                 prefChanged=true;
                 mPosition=0;
                 if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
@@ -196,7 +240,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 if (!currentSortType.equals(prefSortType)) {
                     prefChanged=true;
                     movieItems.clear();
-                    mPosition=0; //
+                    mPosition=0;
                 }
                 if (mTab && mFavoritesAdapter!=null) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
                 updateMovieItems();
@@ -214,6 +258,20 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             mPosition = savedInstanceState.getInt("mPosition", mPosition);
             currentSortType = savedInstanceState.getString("currentSortType");
         }
+        mRetryNetwork = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getActivity(), getString(R.string.retry_network_toast),
+                        Toast.LENGTH_LONG).show();
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateMovieItems();
+                    }
+                }, 4000); // Give more time for reconnect to establish
+            }
+        };
     }
 
     @Override
@@ -231,6 +289,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        mRootView = rootView;
         setHasOptionsMenu(true);
 
         movieAdapter = new MovieAdapter(getActivity(), movieItems);
@@ -295,6 +354,22 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
         @Override
         protected ArrayList<MovieItem> doInBackground(String... params) {
+            if (isOnline()) mOnline=true;
+            else {
+                mOnline = false;
+                if (mTab){
+                    Bundle args = new Bundle();
+                    args.putString("Offline", "offline");
+
+                    DetailActivityFragment fragment = new DetailActivityFragment();
+                    fragment.setArguments(args);
+
+                    getActivity().getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.movie_detail_container, fragment, MainActivity.DETAILFRAGMENT_TAG)
+                            .commit();
+                }
+                return null;
+            }
             if (params.length == 0) {
                 return null;
             }
@@ -303,7 +378,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
             String moviesJsonStr;
             String type = params[0]; // popular or top_rated
-            //replace with your API key here:
 
             try {
                 final String MOVIES_BASE_URL = "http://api.themoviedb.org/3/movie/";
@@ -403,15 +477,37 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 movieList.get(i).setVoteAverage(voteAverage);
                 movieList.get(i).setOverview(overview);
                 movieList.get(i).setMovieID(movieID);
-
             }
             return movieList; // return ArrayList of MovieItems with all fields loaded
         }
 
         @Override
         protected void onPostExecute(ArrayList<MovieItem> items) {
-
+            if (!mOnline) {
+                movieAdapter.clear();
+                View offlineImage = getActivity().findViewById(R.id.offline_image);
+                TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
+                offlineImage.setBackgroundResource(R.drawable.noconnection);
+                offlineImage.setLayoutParams(new LinearLayout.LayoutParams(
+                        (int) getResources().getDimension(R.dimen.dp100),(int) getResources().getDimension(R.dimen.dp100)
+                ));
+                LinearLayout.LayoutParams ll = (LinearLayout.LayoutParams) offlineImage.getLayoutParams();
+                ll.gravity = Gravity.CENTER_HORIZONTAL;
+                offlineImage.setLayoutParams(ll);
+                offlineImage.setOnClickListener(mRetryNetwork);
+                offlineImage.getBackground().setAlpha(255);
+                offlineText.setText(getString(R.string.offline_text));
+                offlineText.setOnClickListener(mRetryNetwork);
+            }
             if (items!=null) {
+                if (mOnline){
+                    View offlineImage = getActivity().findViewById(R.id.offline_image);
+                    TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
+                    offlineImage.setBackground(null);
+                    offlineImage.setLayoutParams(new LinearLayout.LayoutParams
+                            (ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    offlineText.setText("");
+                }
                 movieItems = items;
                 movieAdapter.clear();
                 if (getActivity().findViewById(R.id.movie_detail_container)!=null){
@@ -420,8 +516,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 }
                 for (MovieItem movie : items) {
                     movie.setPosterImageView(getContext());
+                    movie.setBackdropImageView(getContext());
                     // the above loading of ImageViews is so Picasso caches the images before scrolling gridview
-                    // this is only reasonable because only 20 movies
+                    // and for storing images into Favorites
                     movieAdapter.add(movie);
                 }
                 if (mTab) mGridView.setNumColumns(2);
@@ -429,5 +526,11 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 if (mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
             }
         }
+    }
+    public boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 }

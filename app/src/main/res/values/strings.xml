@@ -19,4 +19,8 @@
     <string name="top_rated_title">Top Rated</string>
     <string name="favorites_title">Favorites</string>
     <string name="no_favorites_title">No Favorites to Show</string>
+    <string name="offline_text">Click to retry - Only Favorites are available while offline.</string>
+    <string name="offline_trailers_text">Trailers not available offline.</string>
+    <string name="offline_reviews_text">Reviews not available offline.</string>
+    <string name="retry_network_toast">Retrying Network...</string>
 </resources>

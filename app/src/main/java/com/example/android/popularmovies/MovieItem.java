@@ -18,9 +18,9 @@ public class MovieItem implements Parcelable {
     private String overview;
     private Double voteAverage;
     private Boolean favorite=false;
-    ImageView posterImageView;
+    private ImageView posterImageView;
+    private ImageView backdropImageView;
     private int movieID;
-
 
     public MovieItem(String path, String t){
         posterPath = path;
@@ -52,6 +52,17 @@ public class MovieItem implements Parcelable {
               .load(myUri)
               .into(posterImageView);
     }
+    public void setBackdropImageView(Context context){  // used for caching Picasso images before scrolling
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService
+                (Context.LAYOUT_INFLATER_SERVICE);
+        LinearLayout ll = (LinearLayout) inflater.inflate(R.layout.image_item, null);
+        backdropImageView = (ImageView) ll.findViewById(R.id.movie_image_view);
+        String myPath = "http://image.tmdb.org/t/p/w342/" + backdropPath;
+        Uri myUri = Uri.parse(myPath);
+        Picasso.with(context)
+                .load(myUri)
+                .into(backdropImageView);
+    }
     public void setTitle(String t){
         title = t;
     }
@@ -75,6 +86,9 @@ public class MovieItem implements Parcelable {
 
     public ImageView getPosterImageView() {
         return posterImageView;
+    }
+    public ImageView getBackdropImageView() {
+        return backdropImageView;
     }
 
     public String getTitle(){

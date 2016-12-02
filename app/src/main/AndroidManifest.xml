@@ -3,6 +3,7 @@
     package="com.example.android.popularmovies">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -43,7 +44,6 @@
             android:name="com.example.android.popularmovies.data.MovieProvider"
             android:exported="false">
         </provider>
-
     </application>
 
 </manifest>

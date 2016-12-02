@@ -2,16 +2,21 @@ package com.example.android.popularmovies;
 
 import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Point;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -62,6 +67,7 @@ public class DetailActivityFragment extends Fragment {
     public static final int SHORTREVIEW=1;
     public static final int TRUNCATEDREVIEW=2;
     public static final int FULLREVIEW=3;
+    private boolean mOnline;
     public DetailActivityFragment() {
     }
 
@@ -72,6 +78,11 @@ public class DetailActivityFragment extends Fragment {
         Intent intent = getActivity().getIntent();
         Bundle arguments = getArguments();
         if (arguments!=null) mTab=true;
+
+        if (arguments!=null && arguments.getString("Offline")!=null){
+            rootView = inflater.inflate(R.layout.fragment_blank, container, false);
+            return rootView;
+        }
 
         // if no movie selected, inflate blank fragment
         if (intent !=null && !intent.hasExtra("Movie Items") && arguments==null) {
@@ -166,7 +177,6 @@ public class DetailActivityFragment extends Fragment {
             }
             isPresentCursor.close();
         }
-
         // set backdrop size which is partly determined by orientation
         ImageView detailBackdrop = (ImageView) rootView.findViewById(R.id.backdrop_view);
         detailBackdrop.getLayoutParams().width= backdropWidth;
@@ -223,10 +233,36 @@ public class DetailActivityFragment extends Fragment {
         // Trailers...
         mTrailerLayout = (LinearLayout) rootView.findViewById(R.id.trailer_layout);
         mReviewLayout = (LinearLayout) rootView.findViewById(R.id.reviews);
-
-        new GetTrailerList().execute(Integer.toString(movieID));
-        new GetReviews().execute(Integer.toString(movieID));
-
+        if (isOnline()){
+            mOnline=true;
+            new GetTrailerList().execute(Integer.toString(movieID));
+        }
+        else {
+            mOnline = false;
+            TextView offlineTrailersText = new TextView(getContext());
+            offlineTrailersText.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            offlineTrailersText.setText(getString(R.string.offline_trailers_text));
+            offlineTrailersText.setGravity(Gravity.CENTER_HORIZONTAL);
+            offlineTrailersText.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    getResources().getDimension(R.dimen.medium_text));
+            mTrailerLayout.addView(offlineTrailersText);
+        }
+        if (isOnline()){
+            mOnline=true;
+            new GetReviews().execute(Integer.toString(movieID));
+        }
+        else {
+            mOnline = false;
+            TextView offlineReviewsText = new TextView(getContext());
+            offlineReviewsText.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            offlineReviewsText.setText(getString(R.string.offline_reviews_text));
+            offlineReviewsText.setGravity(Gravity.CENTER_HORIZONTAL);
+            offlineReviewsText.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+                    getResources().getDimension(R.dimen.medium_text));
+            mTrailerLayout.addView(offlineReviewsText);
+        }
         return rootView;
     }
 
@@ -299,6 +335,9 @@ public class DetailActivityFragment extends Fragment {
     public class GetTrailerList extends AsyncTask<String, Void, ArrayList<Trailer>>{
         @Override
         protected ArrayList<Trailer> doInBackground(String... params) {
+            if (params.length == 0){
+                return null;
+            }
             if (params.length == 0){
                 return null;
             }
@@ -395,6 +434,7 @@ public class DetailActivityFragment extends Fragment {
 
         @Override
         protected void onPostExecute(ArrayList<Trailer> trailers) {
+            if (trailers ==null) return;
             int thumbWidth;
             if (mTab) {
                 thumbWidth = displayWidth/4;
@@ -568,6 +608,7 @@ public class DetailActivityFragment extends Fragment {
 
         @Override
         protected void onPostExecute(ArrayList<Review> reviews) {
+            if (reviews==null) return;
             if (mReviewsCount>0) {
                 TextView textReviewAuthor;
                 TextView textReviewContent;
@@ -618,6 +659,12 @@ public class DetailActivityFragment extends Fragment {
             }
             super.onPostExecute(reviews);
         }
+    }
+    public boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
     public interface Callback {
         public void updateGrid (ArrayList<MovieItem> movieList, int position);
