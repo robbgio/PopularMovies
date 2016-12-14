@@ -4,8 +4,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.net.Uri;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,7 +15,6 @@ import android.widget.CursorAdapter;
 import android.widget.ImageView;
 
 import com.example.android.popularmovies.data.MovieContract;
-import com.squareup.picasso.Picasso;
 
 public class FavoritesAdapter extends CursorAdapter {
 
@@ -78,20 +78,20 @@ public class FavoritesAdapter extends CursorAdapter {
             posterHeight = (int) (posterWidth * 1.5);
         }
 
-        final String POSTER_PATH_BASE_URL = "http://image.tmdb.org/t/p/w185/";
-
         ViewHolder viewHolder = (ViewHolder) view.getTag();
-        int posterIndex = cursor.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_POSTER_PATH);
-        String posterPath = cursor.getString(posterIndex);
+        int posterIndex = cursor.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_POSTER_IMAGE);
 
-        String myPath = POSTER_PATH_BASE_URL + posterPath;
-        Uri myUri = Uri.parse(myPath);
+        byte[] imageBlob = cursor.getBlob(posterIndex);
 
         viewHolder.imageView.getLayoutParams().width= posterWidth;
         viewHolder.imageView.getLayoutParams().height= posterHeight;
         viewHolder.imageView.requestLayout();
-        Picasso.with(context)
-                .load(myUri)
-                .into(viewHolder.imageView);
+
+        if (imageBlob!=null) {
+            if (imageBlob.length>0) {
+                Bitmap bm = BitmapFactory.decodeByteArray(imageBlob, 0, imageBlob.length);
+                viewHolder.imageView.setImageBitmap(bm);
+            }
+        }
     }
 }

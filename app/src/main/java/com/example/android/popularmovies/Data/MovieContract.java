@@ -21,6 +21,8 @@ public class MovieContract {
         public static final String MOVIE_DATE = "movie_date";
         public static final String MOVIE_OVERVIEW = "movie_overview";
         public static final String MOVIE_VOTE_AVE = "movie_vote_ave";
+        public static final String MOVIE_POSTER_IMAGE = "movie_poster_image";
+        public static final String MOVIE_BACKDROP_IMAGE = "movie_backdrop_image";
 
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(MOVIE_FAVORITES_TABLE).build();
 

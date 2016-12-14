@@ -21,6 +21,8 @@ public class MovieItem implements Parcelable {
     private ImageView posterImageView;
     private ImageView backdropImageView;
     private int movieID;
+    private byte[] posterImageBlob=new byte[0];
+    private byte[] backdropImageBlob=new byte[0];
 
     public MovieItem(String path, String t){
         posterPath = path;
@@ -133,4 +135,18 @@ public class MovieItem implements Parcelable {
             return new MovieItem[size];
         }
     };
+
+    public void setPosterImageBlob(byte[] pib) {
+        posterImageBlob = pib;
+    }
+    public byte[] getPosterImageBlob (){
+        return posterImageBlob;
+    }
+
+    public void setBackdropImageBlob(byte[] bib) {
+        backdropImageBlob = bib;
+    }
+    public byte[] getBackdropImageBlob(){
+        return backdropImageBlob;
+    }
 }

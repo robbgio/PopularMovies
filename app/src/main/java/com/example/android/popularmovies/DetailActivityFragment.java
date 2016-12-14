@@ -4,14 +4,18 @@ import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.util.TypedValue;
@@ -68,6 +72,9 @@ public class DetailActivityFragment extends Fragment {
     public static final int TRUNCATEDREVIEW=2;
     public static final int FULLREVIEW=3;
     private boolean mOnline;
+    private byte[] mPosterBlob;
+    private byte[] mBackgroundBlob;
+
     public DetailActivityFragment() {
     }
 
@@ -79,6 +86,7 @@ public class DetailActivityFragment extends Fragment {
         Bundle arguments = getArguments();
         if (arguments!=null) mTab=true;
 
+        // if offline, inflate blank fragment
         if (arguments!=null && arguments.getString("Offline")!=null){
             rootView = inflater.inflate(R.layout.fragment_blank, container, false);
             return rootView;
@@ -132,6 +140,10 @@ public class DetailActivityFragment extends Fragment {
 
             mPosition = intent.getExtras().getInt("Position");
             movieItems = intent.getExtras().getParcelableArrayList("Movie Items");
+            mPosterBlob = intent.getExtras().getByteArray("Image Poster");
+            mBackgroundBlob = intent.getExtras().getByteArray("Image Background");
+            movieItems.get(mPosition).setPosterImageBlob(mPosterBlob);
+            movieItems.get(mPosition).setBackdropImageBlob(mBackgroundBlob);
         }
         //for tablet
         if (arguments!=null) {
@@ -187,12 +199,26 @@ public class DetailActivityFragment extends Fragment {
         final String BACKDROP_PATH_BASE_URL = "http://image.tmdb.org/t/p/w342/";
 
         if (movieItems!=null) {
-            String myPath = BACKDROP_PATH_BASE_URL + movieItems.get(mPosition).getBackdropPath();
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
+            String sortPref = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
+            if (sortPref.equals(MainActivityFragment.FAVORITES)){ // if favorites load backdrop from movieItem/database
+                byte[] imageBlob = movieItems.get(mPosition).getBackdropImageBlob();
+                if (imageBlob!=null) {
+                    if (imageBlob.length>0) {
+                        Bitmap bm = BitmapFactory.decodeByteArray(imageBlob, 0, imageBlob.length);
+                        detailBackdrop.setImageBitmap(bm);
+                    }
+                }
+            }
+            else { // if not favorites try to load backdrop even if offline (might be cached!)
+                String myPath = BACKDROP_PATH_BASE_URL + movieItems.get(mPosition).getBackdropPath();
 
-            Uri myUri = Uri.parse(myPath);
-            Picasso.with(getContext())
-                    .load(myUri)
-                    .into(detailBackdrop);
+                Uri myUri = Uri.parse(myPath);
+
+                Picasso.with(getContext())
+                        .load(myUri)
+                        .into(detailBackdrop);
+            }
         }
         // set title and release date
         ((TextView) rootView.findViewById(R.id.title_text_view)).setText(movieTitle);
@@ -312,6 +338,13 @@ public class DetailActivityFragment extends Fragment {
             detailMovie.setFavorite(true);
             toggleButton.setText(getString(R.string.remove_from_favorites));
             mHeartView.setImageResource(R.drawable.heart);
+
+            //byte[] posterByteArray = getBlobFromImageView(detailMovie.getPosterImageView());
+            //if (posterByteArray!=null) detailMovie.setPosterImageBlob(posterByteArray);
+
+            //byte[] backdropByteArray = getBlobFromImageView(detailMovie.getBackdropImageView());
+            //if (backdropByteArray!=null) detailMovie.setBackdropImageBlob(backdropByteArray);
+
             ContentValues insertValues = new ContentValues();
             insertValues.put(MovieContract.MovieFavoritesTable._ID, detailMovie.getMovieID());
             insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_TITLE, detailMovie.getTitle());
@@ -320,6 +353,8 @@ public class DetailActivityFragment extends Fragment {
             insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_DATE, detailMovie.getReleaseDate());
             insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW, detailMovie.getOverview());
             insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE, detailMovie.getVoteAverage());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_POSTER_IMAGE, detailMovie.getPosterImageBlob());
+            insertValues.put(MovieContract.MovieFavoritesTable.MOVIE_BACKDROP_IMAGE, detailMovie.getBackdropImageBlob());
             getActivity().getContentResolver().insert(MovieContract.MovieFavoritesTable.CONTENT_URI,insertValues);
         }
         else {
@@ -332,6 +367,18 @@ public class DetailActivityFragment extends Fragment {
             if (mTab) ((Callback) getActivity()).updateGrid(movieItems, mPosition);
         }
     }
+
+    //public byte[] getBlobFromImageView(ImageView iv){
+    //    if (iv==null) return null;
+    //    if (iv.getDrawable()!=null) {
+    //        Bitmap bm = ((BitmapDrawable) iv.getDrawable()).getBitmap();
+    //       ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    //        bm.compress(Bitmap.CompressFormat.PNG, 100, bos);
+    //        byte[] img = bos.toByteArray();
+    //        return img;
+    //    }
+    //    else {return null;}
+    //}
     public class GetTrailerList extends AsyncTask<String, Void, ArrayList<Trailer>>{
         @Override
         protected ArrayList<Trailer> doInBackground(String... params) {

@@ -63,8 +63,13 @@ public class MainActivity extends AppCompatActivity implements MainActivityFragm
                     .commit();
         }
         else {
+
+            byte[] imagePoster = movieList.get(position).getPosterImageBlob();
+            byte[] imageBackround = movieList.get(position).getBackdropImageBlob();
             Intent detailIntent = new Intent(this, DetailActivity.class)
-                    .putExtra("Movie Items", movieList).putExtra("Position", position);
+                    .putExtra("Movie Items", movieList).putExtra("Position", position)
+                    .putExtra("Image Poster", imagePoster)
+                    .putExtra("Image Background", imageBackround);
             startActivity(detailIntent);
         }
     }

@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -28,6 +30,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,6 +42,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -63,7 +67,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private Toolbar mToolbar;
     private boolean mOnline;
     private String mTitle;
-    public static final String myKey = "";
+    public static final String myKey = "replacewithyourAPIkeyhere";
     private View mRootView;
     private View.OnClickListener mRetryNetwork;
 
@@ -87,6 +91,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     }
 
     public void updateMovieItems() {
+        if (getActivity()==null) return; // if rotated while retrying network connection
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences((getActivity()));
         currentSortType = prefs.getString(getString(R.string.pref_sort_type_key), getString(R.string.pref_sort_type_popular));
         if (currentSortType.equals(FAVORITES)){
@@ -107,17 +112,24 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     }
 
     private boolean showFavorites() {
-        if (!isOnline()) {
+        if (!isOnline()) { // if not online change background to show no network connection graphic
             View offlineImage = getActivity().findViewById(R.id.offline_image);
             TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
             offlineImage.setBackgroundResource(R.drawable.noconnection);
-            offlineImage.getBackground().setAlpha(100);
+			offlineImage.setBackgroundResource(R.drawable.noconnection);
+                offlineImage.setLayoutParams(new LinearLayout.LayoutParams(
+                        (int) getResources().getDimension(R.dimen.dp100),(int) getResources().getDimension(R.dimen.dp100)
+                ));
+                LinearLayout.LayoutParams ll = (LinearLayout.LayoutParams) offlineImage.getLayoutParams();
+                ll.gravity = Gravity.CENTER_HORIZONTAL;
+                offlineImage.setLayoutParams(ll);
+            offlineImage.getBackground().setAlpha(50);
             offlineImage.setOnClickListener(mRetryNetwork);
             offlineText.setText("");
             mOnline=false;
         }
         else {
-            mOnline=true;
+            mOnline=true; // if online change background to be completely empty
             View offlineImage = getActivity().findViewById(R.id.offline_image);
             TextView offlineText = (TextView) getActivity().findViewById(R.id.offline_text);
             offlineImage.setBackground(null);
@@ -167,6 +179,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 String date = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_DATE));
                 String overview = cursorFavorites.getString(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_OVERVIEW));
                 Double vote = cursorFavorites.getDouble(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_VOTE_AVE));
+                byte[] posterImage = cursorFavorites.getBlob(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_POSTER_IMAGE));
+                byte[] backdropImage = cursorFavorites.getBlob(cursorFavorites.getColumnIndex(MovieContract.MovieFavoritesTable.MOVIE_BACKDROP_IMAGE));
 
                 MovieItem movie = new MovieItem(poster, title);
                 movie.setMovieID(id);
@@ -175,6 +189,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 movie.setOverview(overview);
                 movie.setVoteAverage(vote);
                 movie.setFavorite(true);
+                movie.setPosterImageBlob(posterImage);
+                movie.setBackdropImageBlob(backdropImage);
 
                 movieItems.add(movie);
             }
@@ -268,6 +284,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     @Override
                     public void run() {
                         updateMovieItems();
+                        if (getActivity()!=null && mTab) ((Callback) getActivity()).movieSelected(movieItems, mPosition);
                     }
                 }, 4000); // Give more time for reconnect to establish
             }
@@ -311,6 +328,13 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 // Open detail screen if poster is selected
+
+                MovieItem detailMovie = movieItems.get(position);
+                byte[] posterByteArray = getBlobFromImageView(detailMovie.getPosterImageView());
+                if (posterByteArray!=null) detailMovie.setPosterImageBlob(posterByteArray);
+
+                byte[] backdropByteArray = getBlobFromImageView(detailMovie.getBackdropImageView());
+                if (backdropByteArray!=null) detailMovie.setBackdropImageBlob(backdropByteArray);
 
                 ((Callback) getActivity()).movieSelected(movieItems, position);
                 mPosition=position;
@@ -515,8 +539,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     movieAdapter.setmTab(true);
                 }
                 for (MovieItem movie : items) {
-                    movie.setPosterImageView(getContext());
-                    movie.setBackdropImageView(getContext());
+                    movie.setPosterImageView(getActivity());
+                    movie.setBackdropImageView(getActivity());
                     // the above loading of ImageViews is so Picasso caches the images before scrolling gridview
                     // and for storing images into Favorites
                     movieAdapter.add(movie);
@@ -532,5 +556,17 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = cm.getActiveNetworkInfo();
         return netInfo != null && netInfo.isConnectedOrConnecting();
+    }
+
+    public byte[] getBlobFromImageView(ImageView iv){
+        if (iv==null) return null;
+        if (iv.getDrawable()!=null) {
+            Bitmap bm = ((BitmapDrawable) iv.getDrawable()).getBitmap();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bm.compress(Bitmap.CompressFormat.PNG, 100, bos);
+            byte[] img = bos.toByteArray();
+            return img;
+        }
+        else {return null;}
     }
 }
